@@ -1355,6 +1355,11 @@ function escapeHtml(value) {
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#39;");
 }
+
+function escapeAttribute(value) {
+    return escapeHtml(value);
+}
+
 function createAudioManager(initialEnabled) {
     let enabled = initialEnabled;
     let supported = typeof getAudioContextConstructor() === "function";
