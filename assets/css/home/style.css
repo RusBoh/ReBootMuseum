@@ -905,6 +905,15 @@ svg {
     box-shadow: 0 1.1rem 1.9rem rgba(0, 0, 0, 0.24);
 }
 
+.exhibit-hotspot.is-memory-fragment .exhibit-hotspot__halo {
+    opacity: 0.98;
+    animation: memoryFragmentPulse 1.2s ease-in-out 2;
+}
+
+.exhibit-hotspot.is-memory-fragment .exhibit-hotspot__artwork {
+    filter: drop-shadow(0 1.45rem 2.3rem rgba(0, 0, 0, 0.36)) drop-shadow(0 0.65rem 1.2rem rgba(216, 240, 194, 0.22));
+}
+
 .room-panel__footer {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -951,13 +960,25 @@ svg {
     opacity: 0;
     pointer-events: none;
     backdrop-filter: blur(0px) saturate(1);
-    transition: opacity 0.72s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.artifact-drawer-backdrop.is-open,
+.artifact-drawer-backdrop.is-entering,
+.artifact-drawer-backdrop.is-closing {
+    pointer-events: auto;
 }
 
 .artifact-drawer-backdrop.is-open {
     opacity: 1;
-    pointer-events: auto;
     backdrop-filter: blur(5px) saturate(0.85);
+}
+
+.artifact-drawer-backdrop.is-entering {
+    animation: drawerBackdropIn 0.56s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.artifact-drawer-backdrop.is-closing {
+    animation: drawerBackdropOut 0.44s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .artifact-drawer {
@@ -971,7 +992,6 @@ svg {
     transform-origin: right center;
     opacity: 0;
     pointer-events: none;
-    transition: transform 0.84s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.62s ease, filter 0.84s cubic-bezier(0.16, 1, 0.3, 1);
     filter: saturate(0.96);
     will-change: transform, opacity;
 }
@@ -983,8 +1003,13 @@ svg {
     filter: saturate(1);
 }
 
+.artifact-drawer.is-entering {
+    animation: drawerOverlayIn 0.64s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .artifact-drawer.is-closing {
     pointer-events: none;
+    animation: drawerOverlayOut 0.44s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .artifact-drawer__panel {
@@ -999,16 +1024,18 @@ svg {
     overscroll-behavior: contain;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    transform: translateY(0.24rem) scale(0.992);
-    opacity: 0.9;
-    transition: transform 0.84s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.62s ease, box-shadow 0.84s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.84s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 2rem 4rem rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 250, 240, 0.04);
-}
-
-.artifact-drawer.is-open .artifact-drawer__panel {
     transform: translateY(0) scale(1);
     opacity: 1;
+    box-shadow: 0 2rem 4rem rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 250, 240, 0.04);
     border-color: rgba(255, 239, 213, 0.12);
+}
+
+.artifact-drawer.is-entering .artifact-drawer__panel {
+    animation: drawerPanelIn 0.64s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.artifact-drawer.is-closing .artifact-drawer__panel {
+    animation: drawerPanelOut 0.42s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .artifact-drawer__panel::-webkit-scrollbar {
@@ -1020,10 +1047,18 @@ svg {
 .artifact-drawer__topbar,
 .artifact-drawer__preview-shell,
 .artifact-drawer__content > * {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+}
+
+.artifact-drawer.is-entering .artifact-drawer__topbar,
+.artifact-drawer.is-entering .artifact-drawer__preview-shell,
+.artifact-drawer.is-entering .artifact-drawer__content > * {
     opacity: 0;
-    transform: translateY(0.56rem);
-    filter: blur(5px);
-    transition: transform 0.66s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.56s ease, filter 0.66s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateY(0.48rem);
+    filter: blur(4px);
+    animation: drawerContentIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .artifact-drawer.is-open .artifact-drawer__topbar,
@@ -1034,36 +1069,37 @@ svg {
     filter: blur(0);
 }
 
-.artifact-drawer.is-open .artifact-drawer__topbar {
+.artifact-drawer.is-entering .artifact-drawer__topbar {
     transition-delay: 0.1s;
+    animation-delay: 0.12s;
 }
 
-.artifact-drawer.is-open .artifact-drawer__preview-shell {
-    transition-delay: 0.16s;
+.artifact-drawer.is-entering .artifact-drawer__preview-shell {
+    animation-delay: 0.18s;
 }
 
-.artifact-drawer.is-open .artifact-drawer__content > :nth-child(1) {
-    transition-delay: 0.2s;
+.artifact-drawer.is-entering .artifact-drawer__content > :nth-child(1) {
+    animation-delay: 0.22s;
 }
 
-.artifact-drawer.is-open .artifact-drawer__content > :nth-child(2) {
-    transition-delay: 0.24s;
+.artifact-drawer.is-entering .artifact-drawer__content > :nth-child(2) {
+    animation-delay: 0.26s;
 }
 
-.artifact-drawer.is-open .artifact-drawer__content > :nth-child(3) {
-    transition-delay: 0.28s;
+.artifact-drawer.is-entering .artifact-drawer__content > :nth-child(3) {
+    animation-delay: 0.3s;
 }
 
-.artifact-drawer.is-open .artifact-drawer__content > :nth-child(4) {
-    transition-delay: 0.32s;
+.artifact-drawer.is-entering .artifact-drawer__content > :nth-child(4) {
+    animation-delay: 0.34s;
 }
 
-.artifact-drawer.is-open .artifact-drawer__content > :nth-child(5) {
-    transition-delay: 0.36s;
+.artifact-drawer.is-entering .artifact-drawer__content > :nth-child(5) {
+    animation-delay: 0.38s;
 }
 
-.artifact-drawer.is-open .artifact-drawer__content > :nth-child(6) {
-    transition-delay: 0.4s;
+.artifact-drawer.is-entering .artifact-drawer__content > :nth-child(6) {
+    animation-delay: 0.42s;
 }
 
 .artifact-drawer__topbar {
@@ -1247,6 +1283,112 @@ svg {
     border-color: rgba(217, 170, 113, 0.22);
 }
 
+.cinematic-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 24;
+    display: grid;
+    place-items: center;
+    padding: 1.3rem;
+    background: radial-gradient(circle at 50% 24%, rgba(233, 198, 142, 0.08), transparent 28%), rgba(6, 4, 3, 0.94);
+    backdrop-filter: blur(12px) saturate(112%);
+}
+
+.cinematic-splash__glow {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 40%, rgba(233, 198, 142, 0.16), transparent 26%),
+        radial-gradient(circle at 50% 50%, rgba(255, 245, 228, 0.06), transparent 42%);
+}
+
+.cinematic-splash__panel {
+    position: relative;
+    z-index: 1;
+    width: min(42rem, 100%);
+    padding: clamp(1.6rem, 4vw, 2.6rem);
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 239, 213, 0.08);
+    background: linear-gradient(180deg, rgba(18, 12, 9, 0.82), rgba(9, 6, 5, 0.62));
+    box-shadow: inset 0 1px 0 rgba(255, 250, 240, 0.04), var(--shadow-strong);
+    text-align: center;
+}
+
+.cinematic-splash__eyebrow {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+.cinematic-splash__title {
+    margin: 1rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(2.9rem, 8vw, 5rem);
+    line-height: 0.94;
+    letter-spacing: -0.04em;
+}
+
+.cinematic-splash__subtitle {
+    margin: 1rem auto 0;
+    max-width: 26rem;
+    color: var(--text-soft);
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.cinematic-splash.is-visible .cinematic-splash__glow {
+    animation: splashGlowDrift 3.2s ease-in-out both;
+}
+
+.cinematic-splash.is-visible .cinematic-splash__panel {
+    animation: splashReveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cinematic-splash.is-closing {
+    animation: splashFadeAway 0.76s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.memory-fragment-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 2rem;
+    z-index: 23;
+    --toast-shift-x: -50%;
+    min-width: min(22rem, calc(100vw - 2rem));
+    padding: 0.9rem 1rem 1rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255, 239, 213, 0.1);
+    background: linear-gradient(180deg, rgba(19, 13, 10, 0.92), rgba(10, 7, 6, 0.82));
+    box-shadow: var(--shadow-soft);
+    transform: translate(var(--toast-shift-x), 0.7rem);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.memory-fragment-toast.is-visible {
+    animation: memoryToastReveal 2.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.memory-fragment-toast__eyebrow {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.memory-fragment-toast__title {
+    display: block;
+    margin-top: 0.44rem;
+    font-family: var(--font-display);
+    font-size: 1.32rem;
+    color: var(--ivory);
+}
+
 .museum-cursor-dot,
 .museum-cursor-ring {
     position: fixed;
@@ -1255,8 +1397,9 @@ svg {
     z-index: 40;
     pointer-events: none;
     opacity: 0;
-    transform: translate(-100px, -100px);
-    transition: opacity var(--ease-quick), transform 0.12s linear;
+    transform: translate3d(var(--cursor-x, -100px), var(--cursor-y, -100px), 0) scale(var(--cursor-scale, 1));
+    transition: opacity var(--ease-quick), transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), filter var(--ease-quick), box-shadow var(--ease-quick), border-color var(--ease-quick), background var(--ease-quick);
+    will-change: transform, opacity;
 }
 
 .museum-cursor-dot {
@@ -1266,7 +1409,7 @@ svg {
     margin-top: -0.2rem;
     border-radius: 50%;
     background: var(--accent);
-    box-shadow: 0 0 0.9rem rgba(217, 170, 113, 0.34);
+    box-shadow: 0 0 1rem rgba(217, 170, 113, 0.42);
 }
 
 .museum-cursor-ring {
@@ -1276,7 +1419,19 @@ svg {
     margin-top: -1.1rem;
     border-radius: 50%;
     border: 1px solid rgba(255, 238, 214, 0.22);
-    transition: opacity var(--ease-quick), transform var(--ease-quick), border-color var(--ease-quick), width var(--ease-quick), height var(--ease-quick), margin var(--ease-quick);
+    background: radial-gradient(circle at 50% 50%, rgba(233, 198, 142, 0.06), transparent 62%);
+    box-shadow: 0 0 0 rgba(233, 198, 142, 0);
+}
+
+.museum-cursor-ring::after {
+    content: "";
+    position: absolute;
+    inset: 0.34rem;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 242, 220, 0.08);
+    opacity: 0;
+    transform: scale(0.88);
+    transition: opacity var(--ease-quick), transform var(--ease-quick), border-color var(--ease-quick);
 }
 
 .museum-cursor-dot.is-visible,
@@ -1284,13 +1439,32 @@ svg {
     opacity: 1;
 }
 
+.museum-cursor-dot.is-interactive {
+    --cursor-scale: 1.08;
+    box-shadow: 0 0 1.2rem rgba(217, 170, 113, 0.56);
+}
+
 .museum-cursor-ring.is-interactive {
+    --cursor-scale: 1.16;
     border-color: rgba(217, 170, 113, 0.48);
-    transform: scale(1.08);
+    background: radial-gradient(circle at 50% 50%, rgba(233, 198, 142, 0.1), transparent 64%);
+    box-shadow: 0 0 1.6rem rgba(217, 170, 113, 0.14);
+}
+
+.museum-cursor-ring.is-interactive::after {
+    opacity: 1;
+    transform: scale(1);
+    border-color: rgba(255, 239, 213, 0.16);
+}
+
+.museum-cursor-ring.is-exhibit {
+    --cursor-scale: 1.22;
+    border-color: rgba(233, 198, 142, 0.58);
+    box-shadow: 0 0 1.85rem rgba(217, 170, 113, 0.2);
 }
 
 .museum-cursor-ring.is-pressed {
-    transform: scale(0.88);
+    --cursor-scale: 0.94;
 }
 
 button:focus-visible {
@@ -1388,6 +1562,153 @@ button:focus-visible {
     }
 }
 
+@keyframes splashReveal {
+    from {
+        opacity: 0;
+        transform: translateY(1rem) scale(0.985);
+        filter: blur(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes splashGlowDrift {
+    0%,
+    100% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.03);
+    }
+}
+
+@keyframes splashFadeAway {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(1.015);
+    }
+}
+
+@keyframes memoryToastReveal {
+    0% {
+        opacity: 0;
+        transform: translate(var(--toast-shift-x), 1rem) scale(0.98);
+    }
+    14%,
+    76% {
+        opacity: 1;
+        transform: translate(var(--toast-shift-x), 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--toast-shift-x), 0.4rem) scale(0.992);
+    }
+}
+
+@keyframes memoryFragmentPulse {
+    0%,
+    100% {
+        opacity: 0.82;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.06);
+    }
+}
+
+@keyframes drawerBackdropIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px) saturate(1);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(5px) saturate(0.85);
+    }
+}
+
+@keyframes drawerBackdropOut {
+    from {
+        opacity: 1;
+        backdrop-filter: blur(5px) saturate(0.85);
+    }
+    to {
+        opacity: 0;
+        backdrop-filter: blur(0px) saturate(1);
+    }
+}
+
+@keyframes drawerOverlayIn {
+    from {
+        opacity: 0;
+        transform: translate3d(calc(100% + 1.1rem), 0, 0) scale(0.994);
+        filter: saturate(0.94);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+        filter: saturate(1);
+    }
+}
+
+@keyframes drawerOverlayOut {
+    from {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+        filter: saturate(1);
+    }
+    to {
+        opacity: 0;
+        transform: translate3d(calc(100% + 0.8rem), 0, 0) scale(0.992);
+        filter: saturate(0.96);
+    }
+}
+
+@keyframes drawerPanelIn {
+    from {
+        opacity: 0.88;
+        transform: translateY(0.26rem) scale(0.992);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes drawerPanelOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0.9;
+        transform: translateY(0.18rem) scale(0.992);
+    }
+}
+
+@keyframes drawerContentIn {
+    from {
+        opacity: 0;
+        transform: translateY(0.48rem);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
 @media (max-width: 1100px) {
     .museum-header__top,
     .room-copy__grid {
@@ -1403,6 +1724,10 @@ button:focus-visible {
 @media (max-width: 920px) {
     .museum-app {
         padding: 0.65rem;
+    }
+
+    .cinematic-splash__panel {
+        width: min(36rem, 100%);
     }
 
     .museum-toolbar__controls {
@@ -1511,6 +1836,28 @@ button:focus-visible {
     .artifact-drawer__panel {
         border-radius: 1.4rem 0 0 1.4rem;
         padding: 0.95rem 0.82rem 1rem 0.95rem;
+    }
+
+    .cinematic-splash {
+        padding: 0.9rem;
+    }
+
+    .cinematic-splash__panel {
+        border-radius: 1.5rem;
+        padding: 1.3rem 1.1rem;
+    }
+
+    .cinematic-splash__title {
+        font-size: clamp(2.3rem, 10vw, 3.3rem);
+    }
+
+    .memory-fragment-toast {
+        left: 0.9rem;
+        right: 0.9rem;
+        bottom: 1rem;
+        --toast-shift-x: 0;
+        min-width: 0;
+        transform: translate(0, 0.7rem);
     }
 
     .intro-overlay {

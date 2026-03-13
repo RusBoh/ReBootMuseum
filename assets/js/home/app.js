@@ -11,6 +11,10 @@ const STORAGE_KEYS = {
     audio: "interactive-museum:audio-enabled"
 };
 
+const SESSION_KEYS = {
+    cinematicSplashSeen: "interactive-museum:cinematic-splash-seen"
+};
+
 const ROOM_ORDER = ["intro", "communication", "media", "workstation", "archive"];
 
 const ROOM_DEFINITIONS = {
@@ -113,6 +117,8 @@ const STRINGS = {
             documentTitle: "Museum of Forgotten Signals",
             title: "Museum of Forgotten Signals",
             subtitle: "Interactive Museum / Interaktivní muzeum",
+            splashTitle: "Archive of Forgotten Signals",
+            splashSubtitle: "Interactive Museum of Obsolete Technology",
             curatorNote: "Forgotten signals, old media, abandoned devices, preserved memories.",
             roomAtlas: "Room navigation",
             progressRooms: "Rooms explored",
@@ -125,7 +131,8 @@ const STRINGS = {
             loadingDetail: "Restoring rooms, labels, and object records from the archive.",
             archiveStatus: "Atmospheric archive",
             archiveStatusQuiet: "Quiet entry",
-            archiveStatusSound: "Sound layer active"
+            archiveStatusSound: "Sound layer active",
+            memoryFragmentRestored: "Memory fragment restored"
         },
         controls: {
             language: "Language",
@@ -221,6 +228,8 @@ const STRINGS = {
             documentTitle: "Muzeum zapomenutých signálů",
             title: "Muzeum zapomenutých signálů",
             subtitle: "Interactive Museum / Interaktivní muzeum",
+            splashTitle: "Archiv zapomenutých signálů",
+            splashSubtitle: "Interaktivní muzeum zastaralých technologií",
             curatorNote: "Zapomenuté signály, stará média, opuštěné přístroje, uchované vzpomínky.",
             roomAtlas: "Navigace místnostmi",
             progressRooms: "Prozkoumané místnosti",
@@ -233,7 +242,8 @@ const STRINGS = {
             loadingDetail: "Obnovuji místnosti, popisky a záznamy o exponátech z archivu.",
             archiveStatus: "Atmosférický archiv",
             archiveStatusQuiet: "Tichý vstup",
-            archiveStatusSound: "Zvuková vrstva aktivní"
+            archiveStatusSound: "Zvuková vrstva aktivní",
+            memoryFragmentRestored: "Fragment paměti obnoven"
         },
         controls: {
             language: "Jazyk",
@@ -371,8 +381,13 @@ const AMBIENT_PRESETS = {
 
 const dataSourceMeta = document.querySelector('meta[name="museum-data-url"]');
 const initialRoom = getStoredRoom();
+const CINEMATIC_SPLASH_HOLD_MS = 3200;
+const CINEMATIC_SPLASH_EXIT_MS = 760;
+const DRAWER_ENTER_MS = 560;
 const DRAWER_EXIT_MS = 520;
 const DRAWER_ENTER_FOCUS_MS = 240;
+const MEMORY_FRAGMENT_TOAST_MS = 2600;
+const MEMORY_FRAGMENT_PULSE_MS = 1800;
 
 const state = {
     locale: getStoredLocale(),
@@ -381,11 +396,16 @@ const state = {
     entered: false,
     loading: true,
     usingFallbackData: false,
+    cinematicSplashVisible: false,
+    cinematicSplashClosing: false,
     exhibits: [],
     selectedExhibitSlug: null,
     presentedExhibitSlug: null,
     drawerEntering: false,
     drawerClosing: false,
+    crtSequenceCount: 0,
+    memoryFragmentVisible: false,
+    memoryFragmentPulse: false,
     roomTransitionDirection: null,
     visitedRooms: new Set([initialRoom]),
     viewedArtifacts: new Set(),
@@ -393,9 +413,13 @@ const state = {
 };
 
 const audio = createAudioManager(state.audioEnabled);
+let cinematicSplashTimer = null;
+let cinematicSplashTeardownTimer = null;
 let drawerTeardownTimer = null;
-let drawerEnterFrame = null;
+let drawerEnterTimer = null;
 let drawerFocusTimer = null;
+let memoryFragmentTimer = null;
+let memoryFragmentPulseTimer = null;
 
 boot();
 
@@ -414,8 +438,10 @@ async function boot() {
     }
 
     state.visitedRooms.add(state.activeRoomId);
+    state.cinematicSplashVisible = shouldShowCinematicSplash();
     persistRoom();
     render();
+    if (state.cinematicSplashVisible) scheduleCinematicSplash();
 }
 function bindEvents() {
     ROOT.addEventListener("click", handleClick);
@@ -513,7 +539,7 @@ function render() {
 
     const activeRoom = getActiveRoom();
     const activeExhibit = getPresentedExhibit();
-    const drawerIsOpen = Boolean(activeExhibit && state.selectedExhibitSlug && !state.drawerClosing && !state.drawerEntering);
+    const drawerIsOpen = Boolean(activeExhibit && state.selectedExhibitSlug && !state.drawerClosing);
 
     ROOT.innerHTML = `
         <div class="museum-app" data-theme="${activeRoom.theme}">
@@ -524,7 +550,9 @@ function render() {
                 ${renderRoomStage(activeRoom, state.roomTransitionDirection)}
             </div>
             ${renderDrawer(activeExhibit, drawerIsOpen)}
+            ${renderMemoryFragmentToast()}
             ${renderIntroOverlay()}
+            ${renderCinematicSplash()}
         </div>
     `;
 
@@ -622,9 +650,10 @@ function renderExhibit(exhibit) {
     const name = localizeExhibit(exhibit, "name");
     const action = t(`actions.${config.actionKey}`);
     const isSelected = state.presentedExhibitSlug === exhibit.slug;
+    const isMemoryFragmentHot = state.memoryFragmentPulse && exhibit.slug === "crt-monitor";
     const revealDelay = Math.min(0.34, (exhibit.highlightPriority / 100) * 0.32).toFixed(2);
     return `
-        <button class="exhibit-hotspot exhibit-hotspot--${config.labelSide} ${isSelected ? "is-selected" : ""}" type="button" data-action="open-exhibit" data-slug="${exhibit.slug}" data-cursor="interactive" aria-label="${escapeHtml(name)}. ${escapeHtml(action)}" aria-expanded="${state.selectedExhibitSlug === exhibit.slug ? "true" : "false"}" aria-controls="artifact-drawer" style="left:${exhibit.positionX}%;top:${exhibit.positionY}%;width:${width}rem;height:${height}rem;z-index:${40 + exhibit.highlightPriority};--exhibit-rotation:${exhibit.rotation}deg;--exhibit-delay:${revealDelay}s;">
+        <button class="exhibit-hotspot exhibit-hotspot--${config.labelSide} ${isSelected ? "is-selected" : ""} ${isMemoryFragmentHot ? "is-memory-fragment" : ""}" type="button" data-action="open-exhibit" data-slug="${exhibit.slug}" data-cursor="interactive" aria-label="${escapeHtml(name)}. ${escapeHtml(action)}" aria-expanded="${state.selectedExhibitSlug === exhibit.slug ? "true" : "false"}" aria-controls="artifact-drawer" style="left:${exhibit.positionX}%;top:${exhibit.positionY}%;width:${width}rem;height:${height}rem;z-index:${40 + exhibit.highlightPriority};--exhibit-rotation:${exhibit.rotation}deg;--exhibit-delay:${revealDelay}s;">
             <span class="exhibit-hotspot__shadow" aria-hidden="true"></span>
             <span class="exhibit-hotspot__plinth" aria-hidden="true"></span>
             <span class="exhibit-hotspot__halo" aria-hidden="true"></span>
@@ -638,8 +667,9 @@ function renderExhibit(exhibit) {
 }
 
 function renderIntroOverlay() {
+    const introHidden = state.entered || state.cinematicSplashVisible;
     return `
-        <section class="intro-overlay ${state.entered ? "is-hidden" : "is-open"}" ${state.entered ? 'aria-hidden="true"' : ""}>
+        <section class="intro-overlay ${introHidden ? "is-hidden" : "is-open"}" ${introHidden ? 'aria-hidden="true"' : ""}>
             <div class="intro-overlay__backdrop" aria-hidden="true"></div>
             <div class="intro-overlay__beam intro-overlay__beam--left" aria-hidden="true"></div>
             <div class="intro-overlay__beam intro-overlay__beam--right" aria-hidden="true"></div>
@@ -666,12 +696,50 @@ function renderIntroOverlay() {
     `;
 }
 
+function renderCinematicSplash() {
+    if (!state.cinematicSplashVisible) return "";
+    return `
+        <section class="cinematic-splash ${state.cinematicSplashClosing ? "is-closing" : "is-visible"}" aria-live="polite" aria-label="${escapeHtml(t("app.splashTitle"))}">
+            <div class="cinematic-splash__glow" aria-hidden="true"></div>
+            <div class="cinematic-splash__panel">
+                <p class="cinematic-splash__eyebrow">${escapeHtml(t("app.curatorNote"))}</p>
+                <h2 class="cinematic-splash__title">${escapeHtml(t("app.splashTitle"))}</h2>
+                <p class="cinematic-splash__subtitle">${escapeHtml(t("app.splashSubtitle"))}</p>
+            </div>
+        </section>
+    `;
+}
+
+function renderMemoryFragmentToast() {
+    if (!state.memoryFragmentVisible) return "";
+    return `
+        <aside class="memory-fragment-toast is-visible" aria-live="polite">
+            <p class="memory-fragment-toast__eyebrow">${escapeHtml(t("app.drawerEyebrow"))}</p>
+            <strong class="memory-fragment-toast__title">${escapeHtml(t("app.memoryFragmentRestored"))}</strong>
+        </aside>
+    `;
+}
+
 function renderDrawer(exhibit, isOpen) {
     const drawerVisible = Boolean(exhibit);
     const drawerOpen = Boolean(isOpen && exhibit);
+    const backdropStateClass = state.drawerClosing
+        ? "is-closing"
+        : state.drawerEntering
+            ? "is-entering"
+            : drawerVisible
+                ? "is-open"
+                : "";
+    const drawerStateClass = state.drawerClosing
+        ? "is-closing"
+        : state.drawerEntering
+            ? "is-entering is-open"
+            : drawerOpen
+                ? "is-open"
+                : "";
     return `
-        <div class="artifact-drawer-backdrop ${drawerVisible ? "is-open" : ""}" ${drawerVisible ? "" : 'aria-hidden="true"'}></div>
-        <aside class="artifact-drawer ${drawerOpen ? "is-open" : ""} ${state.drawerClosing ? "is-closing" : ""}" id="artifact-drawer" ${drawerOpen ? 'role="dialog" aria-modal="true" aria-labelledby="artifact-title"' : 'aria-hidden="true"'}>
+        <div class="artifact-drawer-backdrop ${backdropStateClass}" ${drawerVisible ? "" : 'aria-hidden="true"'}></div>
+        <aside class="artifact-drawer ${drawerStateClass}" id="artifact-drawer" ${(drawerOpen || state.drawerEntering) ? 'role="dialog" aria-modal="true" aria-labelledby="artifact-title"' : 'aria-hidden="true"'}>
             ${drawerVisible ? renderDrawerPanel(exhibit) : '<div class="artifact-drawer__placeholder" aria-hidden="true"></div>'}
         </aside>
     `;
@@ -866,6 +934,7 @@ function setLocale(locale) {
 }
 
 function enterMuseum(withSound) {
+    clearCinematicSplashImmediately();
     state.entered = true;
     if (withSound) {
         void audio.setEnabled(true).then((enabled) => {
@@ -910,6 +979,7 @@ function openExhibit(slug, trigger) {
     const exhibit = state.exhibits.find((item) => item.slug === slug);
     if (!exhibit) return;
     const shouldAnimateOpen = !state.presentedExhibitSlug || state.drawerClosing;
+    updateCrtSequence(exhibit.slug);
     cancelDrawerTeardown();
     cancelDrawerEnter();
     state.lastTrigger = trigger ?? null;
@@ -925,15 +995,15 @@ function openExhibit(slug, trigger) {
         return;
     }
 
-    drawerEnterFrame = window.requestAnimationFrame(() => {
-        drawerEnterFrame = null;
+    drawerEnterTimer = window.setTimeout(() => {
         state.drawerEntering = false;
         render();
         drawerFocusTimer = window.setTimeout(() => {
             ROOT.querySelector('[data-action="close-modal"]')?.focus();
             drawerFocusTimer = null;
         }, prefersReducedMotion() ? 0 : DRAWER_ENTER_FOCUS_MS);
-    });
+        drawerEnterTimer = null;
+    }, prefersReducedMotion() ? 0 : DRAWER_ENTER_MS);
 }
 
 function closeModal() {
@@ -966,9 +1036,9 @@ function cancelDrawerTeardown() {
 }
 
 function cancelDrawerEnter() {
-    if (drawerEnterFrame) {
-        window.cancelAnimationFrame(drawerEnterFrame);
-        drawerEnterFrame = null;
+    if (drawerEnterTimer) {
+        window.clearTimeout(drawerEnterTimer);
+        drawerEnterTimer = null;
     }
     if (drawerFocusTimer) {
         window.clearTimeout(drawerFocusTimer);
@@ -983,6 +1053,102 @@ function clearDrawerImmediately() {
     state.presentedExhibitSlug = null;
     state.drawerEntering = false;
     state.drawerClosing = false;
+}
+
+function shouldShowCinematicSplash() {
+    if (prefersReducedMotion()) return false;
+    try {
+        return window.sessionStorage.getItem(SESSION_KEYS.cinematicSplashSeen) !== "true";
+    } catch (error) {
+        return true;
+    }
+}
+
+function markCinematicSplashSeen() {
+    try {
+        window.sessionStorage.setItem(SESSION_KEYS.cinematicSplashSeen, "true");
+    } catch (error) {
+        // Ignore session storage failures and keep the splash ephemeral.
+    }
+}
+
+function scheduleCinematicSplash() {
+    cancelCinematicSplashTimers();
+    const holdMs = prefersReducedMotion() ? 40 : CINEMATIC_SPLASH_HOLD_MS;
+    cinematicSplashTimer = window.setTimeout(() => {
+        state.cinematicSplashClosing = true;
+        render();
+        cinematicSplashTimer = null;
+        cinematicSplashTeardownTimer = window.setTimeout(() => {
+            state.cinematicSplashVisible = false;
+            state.cinematicSplashClosing = false;
+            markCinematicSplashSeen();
+            render();
+            cinematicSplashTeardownTimer = null;
+        }, prefersReducedMotion() ? 0 : CINEMATIC_SPLASH_EXIT_MS);
+    }, holdMs);
+}
+
+function cancelCinematicSplashTimers() {
+    if (cinematicSplashTimer) {
+        window.clearTimeout(cinematicSplashTimer);
+        cinematicSplashTimer = null;
+    }
+    if (cinematicSplashTeardownTimer) {
+        window.clearTimeout(cinematicSplashTeardownTimer);
+        cinematicSplashTeardownTimer = null;
+    }
+}
+
+function clearCinematicSplashImmediately() {
+    cancelCinematicSplashTimers();
+    if (!state.cinematicSplashVisible && !state.cinematicSplashClosing) return;
+    state.cinematicSplashVisible = false;
+    state.cinematicSplashClosing = false;
+    markCinematicSplashSeen();
+}
+
+function updateCrtSequence(slug) {
+    if (slug === "crt-monitor") {
+        state.crtSequenceCount += 1;
+        if (state.crtSequenceCount >= 3) {
+            state.crtSequenceCount = 0;
+            triggerMemoryFragment();
+        }
+        return;
+    }
+    state.crtSequenceCount = 0;
+}
+
+function triggerMemoryFragment() {
+    cancelMemoryFragmentTimers();
+    state.memoryFragmentVisible = true;
+    state.memoryFragmentPulse = true;
+    if (state.entered && state.audioEnabled) {
+        audio.playCue("phosphor", 0.72);
+    }
+    render();
+    memoryFragmentPulseTimer = window.setTimeout(() => {
+        state.memoryFragmentPulse = false;
+        render();
+        memoryFragmentPulseTimer = null;
+    }, prefersReducedMotion() ? 0 : MEMORY_FRAGMENT_PULSE_MS);
+    memoryFragmentTimer = window.setTimeout(() => {
+        state.memoryFragmentVisible = false;
+        render();
+        memoryFragmentTimer = null;
+    }, prefersReducedMotion() ? 0 : MEMORY_FRAGMENT_TOAST_MS);
+}
+
+function cancelMemoryFragmentTimers() {
+    if (memoryFragmentTimer) {
+        window.clearTimeout(memoryFragmentTimer);
+        memoryFragmentTimer = null;
+    }
+    if (memoryFragmentPulseTimer) {
+        window.clearTimeout(memoryFragmentPulseTimer);
+        memoryFragmentPulseTimer = null;
+    }
 }
 
 function queueRoomNavigationSmoothing() {
@@ -1311,21 +1477,41 @@ function initCustomCursor() {
     ring.className = "museum-cursor-ring";
     document.body.append(dot, ring);
 
+    const syncCursorState = (target) => {
+        const interactiveTarget = target?.closest?.("[data-cursor='interactive']");
+        const exhibitTarget = target?.closest?.(".exhibit-hotspot");
+        ring.classList.toggle("is-interactive", Boolean(interactiveTarget));
+        ring.classList.toggle("is-exhibit", Boolean(exhibitTarget));
+        dot.classList.toggle("is-interactive", Boolean(interactiveTarget));
+    };
+
     document.addEventListener("pointermove", (event) => {
-        dot.style.transform = `translate(${event.clientX}px, ${event.clientY}px)`;
-        ring.style.transform = `translate(${event.clientX}px, ${event.clientY}px)`;
+        dot.style.setProperty("--cursor-x", `${event.clientX}px`);
+        dot.style.setProperty("--cursor-y", `${event.clientY}px`);
+        ring.style.setProperty("--cursor-x", `${event.clientX}px`);
+        ring.style.setProperty("--cursor-y", `${event.clientY}px`);
         dot.classList.add("is-visible");
         ring.classList.add("is-visible");
+        syncCursorState(event.target);
     }, { passive: true });
 
     document.addEventListener("pointerover", (event) => {
-        ring.classList.toggle("is-interactive", Boolean(event.target.closest("[data-cursor='interactive']")));
+        syncCursorState(event.target);
     });
     document.addEventListener("focusin", (event) => {
-        ring.classList.toggle("is-interactive", Boolean(event.target.closest("[data-cursor='interactive']")));
+        syncCursorState(event.target);
+    });
+    document.addEventListener("pointerleave", () => {
+        dot.classList.remove("is-visible");
+        ring.classList.remove("is-visible");
     });
     document.addEventListener("pointerdown", () => ring.classList.add("is-pressed"));
     document.addEventListener("pointerup", () => ring.classList.remove("is-pressed"));
+    window.addEventListener("blur", () => {
+        dot.classList.remove("is-visible");
+        ring.classList.remove("is-visible");
+        ring.classList.remove("is-pressed");
+    });
 }
 
 function renderVisual(exhibit, suffix) {
