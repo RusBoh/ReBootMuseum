@@ -371,6 +371,8 @@ const AMBIENT_PRESETS = {
 
 const dataSourceMeta = document.querySelector('meta[name="museum-data-url"]');
 const initialRoom = getStoredRoom();
+const DRAWER_EXIT_MS = 520;
+const DRAWER_ENTER_FOCUS_MS = 240;
 
 const state = {
     locale: getStoredLocale(),
@@ -381,13 +383,19 @@ const state = {
     usingFallbackData: false,
     exhibits: [],
     selectedExhibitSlug: null,
+    presentedExhibitSlug: null,
+    drawerEntering: false,
+    drawerClosing: false,
+    roomTransitionDirection: null,
     visitedRooms: new Set([initialRoom]),
     viewedArtifacts: new Set(),
     lastTrigger: null
 };
 
 const audio = createAudioManager(state.audioEnabled);
-let currentSceneCleanup = null;
+let drawerTeardownTimer = null;
+let drawerEnterFrame = null;
+let drawerFocusTimer = null;
 
 boot();
 
@@ -418,9 +426,7 @@ function handleClick(event) {
     const button = event.target.closest("button");
 
     if (!button) {
-        if (event.target.classList.contains("artifact-modal-backdrop")) {
-            closeModal();
-        }
+        closeBackdropTarget(event);
         return;
     }
 
@@ -506,30 +512,24 @@ function render() {
     document.documentElement.lang = state.locale;
 
     const activeRoom = getActiveRoom();
-    const activeExhibit = getSelectedExhibit();
+    const activeExhibit = getPresentedExhibit();
+    const drawerIsOpen = Boolean(activeExhibit && state.selectedExhibitSlug && !state.drawerClosing && !state.drawerEntering);
 
     ROOT.innerHTML = `
         <div class="museum-app" data-theme="${activeRoom.theme}">
+            <div class="museum-vignette" aria-hidden="true"></div>
             <div class="museum-grain" aria-hidden="true"></div>
-            <div class="museum-aura museum-aura--left" aria-hidden="true"></div>
-            <div class="museum-aura museum-aura--right" aria-hidden="true"></div>
-            <div class="museum-haze" aria-hidden="true"></div>
-            <div class="museum-shell ${state.entered ? "" : "museum-shell--locked"}" ${state.entered ? "" : 'aria-hidden="true"'}>
-                ${renderDesktopMarkers(activeRoom)}
-                <div class="museum-main">
-                    ${renderHeader(activeRoom)}
-                    ${renderMobileMarkers(activeRoom)}
-                    ${renderRoomStage(activeRoom)}
-                </div>
+            <div class="museum-shell ${state.entered ? "" : "museum-shell--locked"} ${activeExhibit ? "museum-shell--with-drawer" : ""}" ${state.entered ? "" : 'aria-hidden="true"'}>
+                ${renderHeader(activeRoom)}
+                ${renderRoomStage(activeRoom, state.roomTransitionDirection)}
             </div>
+            ${renderDrawer(activeExhibit, drawerIsOpen)}
             ${renderIntroOverlay()}
-            ${renderModal(activeExhibit)}
         </div>
     `;
 
-    attachSceneMotion();
-    if (state.selectedExhibitSlug) {
-        ROOT.querySelector('[data-action="close-modal"]')?.focus();
+    if (state.roomTransitionDirection) {
+        queueRoomNavigationSmoothing();
     }
     syncAmbientSound();
 }
@@ -541,36 +541,39 @@ function renderHeader(activeRoom) {
 
     return `
         <header class="museum-header">
-            <div class="museum-branding">
-                <p class="museum-branding__eyebrow">${escapeHtml(t("app.curatorNote"))}</p>
-                <h1 class="museum-branding__title">${escapeHtml(t("app.title"))}</h1>
-                <p class="museum-branding__subtitle">${escapeHtml(t("app.subtitle"))}</p>
-            </div>
-            <div class="museum-toolbar">
-                <div class="museum-toolbar__controls">
-                    ${renderLocaleSwitcher()}
-                    <button class="museum-sound-toggle ${state.audioEnabled ? "is-enabled" : ""}" type="button" data-action="toggle-sound" data-cursor="interactive" ${audio.isSupported() ? "" : "disabled"}>
-                        <span class="museum-sound-toggle__dot" aria-hidden="true"></span>
-                        <span class="museum-sound-toggle__label">${escapeHtml(t("controls.sound"))}</span>
-                        <span class="museum-sound-toggle__state">${escapeHtml(soundState)}</span>
-                    </button>
+            <div class="museum-header__top">
+                <div class="museum-branding">
+                    <p class="museum-branding__eyebrow">${escapeHtml(t("app.curatorNote"))}</p>
+                    <h1 class="museum-branding__title">${escapeHtml(t("app.title"))}</h1>
+                    <p class="museum-branding__subtitle">${escapeHtml(t("app.subtitle"))}</p>
                 </div>
-                <div class="museum-toolbar__stats">
-                    <div class="museum-toolbar__room">
-                        <span>${escapeHtml(t("controls.currentRoom"))}</span>
-                        <strong>${escapeHtml(t(activeRoom.titleKey))}</strong>
+                <div class="museum-toolbar">
+                    <div class="museum-toolbar__controls">
+                        ${renderLocaleSwitcher()}
+                        <button class="museum-sound-toggle ${state.audioEnabled ? "is-enabled" : ""}" type="button" data-action="toggle-sound" data-cursor="interactive" ${audio.isSupported() ? "" : "disabled"}>
+                            <span class="museum-sound-toggle__dot" aria-hidden="true"></span>
+                            <span class="museum-sound-toggle__label">${escapeHtml(t("controls.sound"))}</span>
+                            <span class="museum-sound-toggle__state">${escapeHtml(soundState)}</span>
+                        </button>
                     </div>
-                    <div class="museum-stat">
-                        <span>${escapeHtml(t("app.progressRooms"))}</span>
-                        <strong>${state.visitedRooms.size}/${ROOM_ORDER.length}</strong>
+                    <div class="museum-toolbar__stats">
+                        <div class="museum-toolbar__room">
+                            <span>${escapeHtml(t("controls.currentRoom"))}</span>
+                            <strong>${escapeHtml(t(activeRoom.titleKey))}</strong>
+                        </div>
+                        <div class="museum-stat">
+                            <span>${escapeHtml(t("app.progressRooms"))}</span>
+                            <strong>${state.visitedRooms.size}/${ROOM_ORDER.length}</strong>
+                        </div>
+                        <div class="museum-stat">
+                            <span>${escapeHtml(t("app.progressArtifacts"))}</span>
+                            <strong>${state.viewedArtifacts.size}/${state.exhibits.length}</strong>
+                        </div>
                     </div>
-                    <div class="museum-stat">
-                        <span>${escapeHtml(t("app.progressArtifacts"))}</span>
-                        <strong>${state.viewedArtifacts.size}/${state.exhibits.length}</strong>
-                    </div>
+                    <p class="museum-toolbar__note ${state.usingFallbackData ? "is-fallback" : ""}">${escapeHtml(state.usingFallbackData ? t("app.snapshotFallback") : t("app.snapshotLive"))}</p>
                 </div>
-                <p class="museum-toolbar__note ${state.usingFallbackData ? "is-fallback" : ""}">${escapeHtml(state.usingFallbackData ? t("app.snapshotFallback") : t("app.snapshotLive"))}</p>
             </div>
+            ${renderTopNavigation(activeRoom)}
         </header>
     `;
 }
@@ -585,90 +588,23 @@ function renderLocaleSwitcher() {
     `;
 }
 
-function renderDesktopMarkers(activeRoom) {
+function renderTopNavigation(activeRoom) {
     return `
-        <aside class="museum-rail" aria-label="${escapeHtml(t("app.roomAtlas"))}">
-            <div class="museum-rail__track">
+        <nav class="museum-top-nav" aria-label="${escapeHtml(t("app.roomAtlas"))}">
+            <div class="museum-top-nav__track">
                 ${ROOM_ORDER.map((roomId, index) => {
                     const room = ROOM_DEFINITIONS[roomId];
                     const isActive = roomId === activeRoom.id;
                     const isVisited = state.visitedRooms.has(roomId);
                     return `
-                        <button class="museum-rail__marker ${isActive ? "is-active" : ""} ${isVisited ? "is-visited" : ""}" type="button" data-action="go-room" data-room-id="${roomId}" data-cursor="interactive" aria-current="${isActive ? "true" : "false"}" aria-label="${escapeHtml(t("controls.jumpToRoom"))}: ${escapeHtml(t(room.titleKey))}">
-                            <span class="museum-rail__index">${String(index + 1).padStart(2, "0")}</span>
-                            <span class="museum-rail__dot" aria-hidden="true"></span>
-                            <span class="museum-rail__label">${escapeHtml(t(room.titleKey))}</span>
+                        <button class="museum-top-nav__item ${isActive ? "is-active" : ""} ${isVisited ? "is-visited" : ""}" type="button" data-action="go-room" data-room-id="${roomId}" data-cursor="interactive" aria-current="${isActive ? "true" : "false"}" aria-label="${escapeHtml(t("controls.jumpToRoom"))}: ${escapeHtml(t(room.titleKey))}">
+                            <span class="museum-top-nav__index">${String(index + 1).padStart(2, "0")}</span>
+                            <span class="museum-top-nav__label">${escapeHtml(t(room.titleKey))}</span>
                         </button>
                     `;
                 }).join("")}
             </div>
-        </aside>
-    `;
-}
-
-function renderMobileMarkers(activeRoom) {
-    return `
-        <nav class="museum-mobile-rail" aria-label="${escapeHtml(t("app.roomAtlas"))}">
-            <div class="museum-mobile-rail__dots">
-                ${ROOM_ORDER.map((roomId) => {
-                    const room = ROOM_DEFINITIONS[roomId];
-                    const isActive = roomId === activeRoom.id;
-                    const isVisited = state.visitedRooms.has(roomId);
-                    return `<button class="museum-mobile-rail__dot ${isActive ? "is-active" : ""} ${isVisited ? "is-visited" : ""}" type="button" data-action="go-room" data-room-id="${roomId}" data-cursor="interactive" aria-label="${escapeHtml(t("controls.jumpToRoom"))}: ${escapeHtml(t(room.titleKey))}"></button>`;
-                }).join("")}
-            </div>
-            <p class="museum-mobile-rail__label">${escapeHtml(t(activeRoom.titleKey))}</p>
         </nav>
-    `;
-}
-
-function renderRoomStage(activeRoom) {
-    const exhibits = getRoomExhibits(activeRoom.id);
-    const activeIndex = ROOM_ORDER.indexOf(activeRoom.id);
-    const previousRoomId = ROOM_ORDER[activeIndex - 1] ?? null;
-    const nextRoomId = ROOM_ORDER[activeIndex + 1] ?? null;
-
-    return `
-        <section class="room-panel">
-            <div class="room-copy">
-                <div class="room-copy__meta">
-                    <span class="room-copy__count">${String(activeIndex + 1).padStart(2, "0")} / ${String(ROOM_ORDER.length).padStart(2, "0")}</span>
-                    <span class="room-copy__divider" aria-hidden="true"></span>
-                    <span class="room-copy__eyebrow">${escapeHtml(t(activeRoom.eyebrowKey))}</span>
-                </div>
-                <div class="room-copy__grid">
-                    <div class="room-copy__lead">
-                        <h2 class="room-copy__title">${escapeHtml(t(activeRoom.titleKey))}</h2>
-                        <p class="room-copy__description">${escapeHtml(t(activeRoom.descriptionKey))}</p>
-                    </div>
-                    <aside class="room-copy__atmosphere">${escapeHtml(t(activeRoom.atmosphereKey))}</aside>
-                </div>
-            </div>
-            <article class="museum-scene" data-room="${activeRoom.id}" data-theme="${activeRoom.theme}" aria-label="${escapeHtml(t(activeRoom.titleKey))}">
-                <div class="museum-scene__wall" aria-hidden="true"></div>
-                <div class="museum-scene__niche" aria-hidden="true"></div>
-                <div class="museum-scene__floor" aria-hidden="true"></div>
-                <div class="museum-scene__ambient" aria-hidden="true"></div>
-                <div class="museum-scene__dust" aria-hidden="true"></div>
-                <div class="museum-scene__layers" aria-hidden="true">${activeRoom.layers.map(renderLayer).join("")}</div>
-                <div class="museum-scene__objects">${exhibits.map(renderExhibit).join("")}</div>
-                <div class="museum-scene__footer"><p class="museum-scene__hint">${escapeHtml(t("app.sceneHint"))}</p></div>
-            </article>
-            <footer class="room-panel__footer">
-                <button class="room-nav room-nav--previous ${previousRoomId ? "" : "is-hidden"}" type="button" data-action="previous-room" data-cursor="interactive" ${previousRoomId ? "" : "disabled"}>
-                    <span>${escapeHtml(t("controls.previousRoom"))}</span>
-                    <strong>${previousRoomId ? escapeHtml(t(ROOM_DEFINITIONS[previousRoomId].titleKey)) : ""}</strong>
-                </button>
-                <div class="room-panel__status">
-                    <span>${escapeHtml(t("controls.archiveReady"))}</span>
-                    <strong>${escapeHtml(state.entered ? (state.audioEnabled ? t("app.archiveStatusSound") : t("app.archiveStatusQuiet")) : t("app.archiveStatus"))}</strong>
-                </div>
-                <button class="room-nav room-nav--next ${nextRoomId ? "" : "is-hidden"}" type="button" data-action="next-room" data-cursor="interactive" ${nextRoomId ? "" : "disabled"}>
-                    <span>${escapeHtml(t("controls.nextRoom"))}</span>
-                    <strong>${nextRoomId ? escapeHtml(t(ROOM_DEFINITIONS[nextRoomId].titleKey)) : ""}</strong>
-                </button>
-            </footer>
-        </section>
     `;
 }
 
@@ -685,8 +621,10 @@ function renderExhibit(exhibit) {
     const height = (config.width * config.aspect * exhibit.scale).toFixed(2);
     const name = localizeExhibit(exhibit, "name");
     const action = t(`actions.${config.actionKey}`);
+    const isSelected = state.presentedExhibitSlug === exhibit.slug;
+    const revealDelay = Math.min(0.34, (exhibit.highlightPriority / 100) * 0.32).toFixed(2);
     return `
-        <button class="exhibit-hotspot exhibit-hotspot--${config.labelSide}" type="button" data-action="open-exhibit" data-slug="${exhibit.slug}" data-cursor="interactive" aria-label="${escapeHtml(name)}. ${escapeHtml(action)}" style="left:${exhibit.positionX}%;top:${exhibit.positionY}%;width:${width}rem;height:${height}rem;z-index:${40 + exhibit.highlightPriority};--exhibit-rotation:${exhibit.rotation}deg;">
+        <button class="exhibit-hotspot exhibit-hotspot--${config.labelSide} ${isSelected ? "is-selected" : ""}" type="button" data-action="open-exhibit" data-slug="${exhibit.slug}" data-cursor="interactive" aria-label="${escapeHtml(name)}. ${escapeHtml(action)}" aria-expanded="${state.selectedExhibitSlug === exhibit.slug ? "true" : "false"}" aria-controls="artifact-drawer" style="left:${exhibit.positionX}%;top:${exhibit.positionY}%;width:${width}rem;height:${height}rem;z-index:${40 + exhibit.highlightPriority};--exhibit-rotation:${exhibit.rotation}deg;--exhibit-delay:${revealDelay}s;">
             <span class="exhibit-hotspot__shadow" aria-hidden="true"></span>
             <span class="exhibit-hotspot__plinth" aria-hidden="true"></span>
             <span class="exhibit-hotspot__halo" aria-hidden="true"></span>
@@ -728,58 +666,122 @@ function renderIntroOverlay() {
     `;
 }
 
-function renderModal(exhibit) {
-    if (!exhibit) return "";
+function renderDrawer(exhibit, isOpen) {
+    const drawerVisible = Boolean(exhibit);
+    const drawerOpen = Boolean(isOpen && exhibit);
     return `
-        <div class="artifact-modal-backdrop">
-            <section class="artifact-modal" role="dialog" aria-modal="true" aria-labelledby="artifact-title">
-                <button class="artifact-modal__close" type="button" data-action="close-modal" data-cursor="interactive">${escapeHtml(t("controls.close"))}</button>
-                <p class="artifact-modal__eyebrow">${escapeHtml(t("app.drawerEyebrow"))}</p>
-                <div class="artifact-modal__preview">${renderVisual(exhibit, "modal")}</div>
-                <h3 class="artifact-modal__title" id="artifact-title">${escapeHtml(localizeExhibit(exhibit, "name"))}</h3>
-                <div class="artifact-modal__meta">
-                    <div class="artifact-modal__meta-card"><span>${escapeHtml(t("controls.yearOrEra"))}</span><strong>${escapeHtml(localizeExhibit(exhibit, "year_or_era"))}</strong></div>
-                    <div class="artifact-modal__meta-card"><span>${escapeHtml(t("controls.category"))}</span><strong>${escapeHtml(t(`categories.${exhibit.category}`))}</strong></div>
-                    <div class="artifact-modal__meta-card"><span>${escapeHtml(t("controls.room"))}</span><strong>${escapeHtml(t(ROOM_DEFINITIONS[exhibit.room].titleKey))}</strong></div>
+        <div class="artifact-drawer-backdrop ${drawerVisible ? "is-open" : ""}" ${drawerVisible ? "" : 'aria-hidden="true"'}></div>
+        <aside class="artifact-drawer ${drawerOpen ? "is-open" : ""} ${state.drawerClosing ? "is-closing" : ""}" id="artifact-drawer" ${drawerOpen ? 'role="dialog" aria-modal="true" aria-labelledby="artifact-title"' : 'aria-hidden="true"'}>
+            ${drawerVisible ? renderDrawerPanel(exhibit) : '<div class="artifact-drawer__placeholder" aria-hidden="true"></div>'}
+        </aside>
+    `;
+}
+
+function renderDrawerPanel(exhibit) {
+    const config = VISUAL_REGISTRY[exhibit.visualKey] ?? VISUAL_REGISTRY.fallback;
+    return `
+        <div class="artifact-drawer__panel">
+            <div class="artifact-drawer__topbar">
+                <p class="artifact-drawer__eyebrow">${escapeHtml(t("app.drawerEyebrow"))}</p>
+                <button class="artifact-drawer__close" type="button" data-action="close-modal" data-cursor="interactive">${escapeHtml(t("controls.close"))}</button>
+            </div>
+            <div class="artifact-drawer__preview-shell">
+                <div class="artifact-drawer__preview">${renderVisual(exhibit, "drawer")}</div>
+            </div>
+            <div class="artifact-drawer__content">
+                <h3 class="artifact-drawer__title" id="artifact-title">${escapeHtml(localizeExhibit(exhibit, "name"))}</h3>
+                <p class="artifact-drawer__subtitle">${escapeHtml(t(ROOM_DEFINITIONS[exhibit.room].titleKey))} · ${escapeHtml(t(`actions.${config.actionKey}`))}</p>
+                <div class="artifact-drawer__meta">
+                    <div class="artifact-drawer__meta-card"><span>${escapeHtml(t("controls.yearOrEra"))}</span><strong>${escapeHtml(localizeExhibit(exhibit, "year_or_era"))}</strong></div>
+                    <div class="artifact-drawer__meta-card"><span>${escapeHtml(t("controls.category"))}</span><strong>${escapeHtml(t(`categories.${exhibit.category}`))}</strong></div>
+                    <div class="artifact-drawer__meta-card"><span>${escapeHtml(t("controls.room"))}</span><strong>${escapeHtml(t(ROOM_DEFINITIONS[exhibit.room].titleKey))}</strong></div>
                 </div>
-                <p class="artifact-modal__description">${escapeHtml(localizeExhibit(exhibit, "description"))}</p>
-                <p class="artifact-modal__caption">${escapeHtml(localizeExhibit(exhibit, "caption"))}</p>
-                <button class="artifact-modal__action" type="button" data-action="replay-cue" data-cursor="interactive">${escapeHtml(t(`actions.${(VISUAL_REGISTRY[exhibit.visualKey] ?? VISUAL_REGISTRY.fallback).actionKey}`))}</button>
-            </section>
+                <p class="artifact-drawer__description">${escapeHtml(localizeExhibit(exhibit, "description"))}</p>
+                <p class="artifact-drawer__caption">${escapeHtml(localizeExhibit(exhibit, "caption"))}</p>
+                <button class="artifact-drawer__action" type="button" data-action="replay-cue" data-cursor="interactive">${escapeHtml(t(`actions.${config.actionKey}`))}</button>
+            </div>
         </div>
     `;
 }
-function attachSceneMotion() {
-    currentSceneCleanup?.();
-    currentSceneCleanup = null;
 
-    const scene = ROOT.querySelector(".museum-scene");
-    if (!scene || prefersReducedMotion()) return;
+function closeBackdropTarget(event) {
+    if (event.target.classList.contains("artifact-drawer-backdrop")) {
+        closeModal();
+        return true;
+    }
+    return false;
+}
 
-    const handlePointerMove = (event) => {
-        const bounds = scene.getBoundingClientRect();
-        if (!bounds.width || !bounds.height) return;
-        const relativeX = (event.clientX - bounds.left) / bounds.width;
-        const relativeY = (event.clientY - bounds.top) / bounds.height;
-        scene.style.setProperty("--parallax-x", `${((relativeX - 0.5) * 24).toFixed(2)}px`);
-        scene.style.setProperty("--parallax-y", `${((relativeY - 0.5) * 16).toFixed(2)}px`);
-        scene.style.setProperty("--light-x", `${(relativeX * 100).toFixed(2)}%`);
-        scene.style.setProperty("--light-y", `${(relativeY * 100).toFixed(2)}%`);
-    };
+function renderSceneLayers(activeRoom) {
+    return activeRoom.layers.map(renderLayer).join("");
+}
 
-    const handlePointerLeave = () => {
-        scene.style.setProperty("--parallax-x", "0px");
-        scene.style.setProperty("--parallax-y", "0px");
-        scene.style.setProperty("--light-x", "50%");
-        scene.style.setProperty("--light-y", "24%");
-    };
+function renderSceneObjects(exhibits) {
+    return exhibits.map(renderExhibit).join("");
+}
 
-    scene.addEventListener("pointermove", handlePointerMove, { passive: true });
-    scene.addEventListener("pointerleave", handlePointerLeave, { passive: true });
-    currentSceneCleanup = () => {
-        scene.removeEventListener("pointermove", handlePointerMove);
-        scene.removeEventListener("pointerleave", handlePointerLeave);
-    };
+function renderSceneHint() {
+    return escapeHtml(t("app.sceneHint"));
+}
+
+function renderSceneFooter() {
+    return `<p class="museum-scene__hint">${renderSceneHint()}</p>`;
+}
+
+function renderSceneArticle(activeRoom, exhibits) {
+    return `
+        <article class="museum-scene" data-room="${activeRoom.id}" data-theme="${activeRoom.theme}" aria-label="${escapeHtml(t(activeRoom.titleKey))}">
+            <div class="museum-scene__wall" aria-hidden="true"></div>
+            <div class="museum-scene__niche" aria-hidden="true"></div>
+            <div class="museum-scene__floor" aria-hidden="true"></div>
+            <div class="museum-scene__ambient" aria-hidden="true"></div>
+            <div class="museum-scene__layers" aria-hidden="true">${renderSceneLayers(activeRoom)}</div>
+            <div class="museum-scene__objects">${renderSceneObjects(exhibits)}</div>
+            <div class="museum-scene__footer">${renderSceneFooter()}</div>
+        </article>
+    `;
+}
+
+function renderRoomStage(activeRoom, transitionDirection) {
+    const exhibits = getRoomExhibits(activeRoom.id);
+    const activeIndex = ROOM_ORDER.indexOf(activeRoom.id);
+    const previousRoomId = ROOM_ORDER[activeIndex - 1] ?? null;
+    const nextRoomId = ROOM_ORDER[activeIndex + 1] ?? null;
+    const transitionClass = transitionDirection ? ` room-panel--transition room-panel--${transitionDirection}` : "";
+
+    return `
+        <section class="room-panel${transitionClass}">
+            <div class="room-copy">
+                <div class="room-copy__meta">
+                    <span class="room-copy__count">${String(activeIndex + 1).padStart(2, "0")} / ${String(ROOM_ORDER.length).padStart(2, "0")}</span>
+                    <span class="room-copy__divider" aria-hidden="true"></span>
+                    <span class="room-copy__eyebrow">${escapeHtml(t(activeRoom.eyebrowKey))}</span>
+                </div>
+                <div class="room-copy__grid">
+                    <div class="room-copy__lead">
+                        <h2 class="room-copy__title">${escapeHtml(t(activeRoom.titleKey))}</h2>
+                        <p class="room-copy__description">${escapeHtml(t(activeRoom.descriptionKey))}</p>
+                    </div>
+                    <aside class="room-copy__atmosphere">${escapeHtml(t(activeRoom.atmosphereKey))}</aside>
+                </div>
+            </div>
+            ${renderSceneArticle(activeRoom, exhibits)}
+            <footer class="room-panel__footer">
+                <button class="room-nav room-nav--previous ${previousRoomId ? "" : "is-hidden"}" type="button" data-action="previous-room" data-cursor="interactive" ${previousRoomId ? "" : "disabled"}>
+                    <span>${escapeHtml(t("controls.previousRoom"))}</span>
+                    <strong>${previousRoomId ? escapeHtml(t(ROOM_DEFINITIONS[previousRoomId].titleKey)) : ""}</strong>
+                </button>
+                <div class="room-panel__status">
+                    <span>${escapeHtml(t("controls.archiveReady"))}</span>
+                    <strong>${escapeHtml(state.entered ? (state.audioEnabled ? t("app.archiveStatusSound") : t("app.archiveStatusQuiet")) : t("app.archiveStatus"))}</strong>
+                </div>
+                <button class="room-nav room-nav--next ${nextRoomId ? "" : "is-hidden"}" type="button" data-action="next-room" data-cursor="interactive" ${nextRoomId ? "" : "disabled"}>
+                    <span>${escapeHtml(t("controls.nextRoom"))}</span>
+                    <strong>${nextRoomId ? escapeHtml(t(ROOM_DEFINITIONS[nextRoomId].titleKey)) : ""}</strong>
+                </button>
+            </footer>
+        </section>
+    `;
 }
 
 async function loadSnapshot() {
@@ -848,6 +850,10 @@ function getSelectedExhibit() {
     return state.exhibits.find((exhibit) => exhibit.slug === state.selectedExhibitSlug) ?? null;
 }
 
+function getPresentedExhibit() {
+    return state.exhibits.find((exhibit) => exhibit.slug === state.presentedExhibitSlug) ?? null;
+}
+
 function getAdjacentRoom(direction) {
     return ROOM_ORDER[ROOM_ORDER.indexOf(state.activeRoomId) + direction] ?? null;
 }
@@ -879,12 +885,17 @@ function enterMuseum(withSound) {
 
 function changeRoom(roomId) {
     if (!roomId || !ROOM_DEFINITIONS[roomId] || roomId === state.activeRoomId) return;
+    const currentIndex = ROOM_ORDER.indexOf(state.activeRoomId);
+    const nextIndex = ROOM_ORDER.indexOf(roomId);
+    const direction = nextIndex > currentIndex ? "forward" : "backward";
+    clearDrawerImmediately();
+    state.roomTransitionDirection = direction;
     state.activeRoomId = roomId;
-    state.selectedExhibitSlug = null;
     state.visitedRooms.add(roomId);
     persistRoom();
     if (state.entered && state.audioEnabled) audio.playCue("transition", 0.7);
     render();
+    state.roomTransitionDirection = null;
 }
 
 async function toggleSound() {
@@ -898,23 +909,99 @@ async function toggleSound() {
 function openExhibit(slug, trigger) {
     const exhibit = state.exhibits.find((item) => item.slug === slug);
     if (!exhibit) return;
+    const shouldAnimateOpen = !state.presentedExhibitSlug || state.drawerClosing;
+    cancelDrawerTeardown();
+    cancelDrawerEnter();
     state.lastTrigger = trigger ?? null;
     state.selectedExhibitSlug = exhibit.slug;
+    state.presentedExhibitSlug = exhibit.slug;
+    state.drawerClosing = false;
+    state.drawerEntering = shouldAnimateOpen;
     state.viewedArtifacts.add(exhibit.slug);
     if (state.entered && state.audioEnabled) audio.playCue(exhibit.soundKey, 0.82);
     render();
+
+    if (!shouldAnimateOpen) {
+        return;
+    }
+
+    drawerEnterFrame = window.requestAnimationFrame(() => {
+        drawerEnterFrame = null;
+        state.drawerEntering = false;
+        render();
+        drawerFocusTimer = window.setTimeout(() => {
+            ROOT.querySelector('[data-action="close-modal"]')?.focus();
+            drawerFocusTimer = null;
+        }, prefersReducedMotion() ? 0 : DRAWER_ENTER_FOCUS_MS);
+    });
 }
 
 function closeModal() {
     if (!state.selectedExhibitSlug) return;
+    cancelDrawerTeardown();
+    cancelDrawerEnter();
     state.selectedExhibitSlug = null;
+    state.drawerEntering = false;
+    state.drawerClosing = true;
     render();
-    state.lastTrigger?.focus?.();
+    drawerTeardownTimer = window.setTimeout(() => {
+        state.presentedExhibitSlug = null;
+        state.drawerEntering = false;
+        state.drawerClosing = false;
+        render();
+        state.lastTrigger?.focus?.();
+        drawerTeardownTimer = null;
+    }, DRAWER_EXIT_MS);
 }
 
 function replaySelectedCue() {
     const exhibit = getSelectedExhibit();
     if (exhibit) audio.playCue(exhibit.soundKey, 0.92);
+}
+
+function cancelDrawerTeardown() {
+    if (!drawerTeardownTimer) return;
+    window.clearTimeout(drawerTeardownTimer);
+    drawerTeardownTimer = null;
+}
+
+function cancelDrawerEnter() {
+    if (drawerEnterFrame) {
+        window.cancelAnimationFrame(drawerEnterFrame);
+        drawerEnterFrame = null;
+    }
+    if (drawerFocusTimer) {
+        window.clearTimeout(drawerFocusTimer);
+        drawerFocusTimer = null;
+    }
+}
+
+function clearDrawerImmediately() {
+    cancelDrawerTeardown();
+    cancelDrawerEnter();
+    state.selectedExhibitSlug = null;
+    state.presentedExhibitSlug = null;
+    state.drawerEntering = false;
+    state.drawerClosing = false;
+}
+
+function queueRoomNavigationSmoothing() {
+    const reduceMotion = prefersReducedMotion();
+    window.requestAnimationFrame(() => {
+        ROOT.querySelector(".museum-top-nav__item.is-active")?.scrollIntoView({
+            behavior: reduceMotion ? "auto" : "smooth",
+            block: "nearest",
+            inline: "center"
+        });
+
+        const panel = ROOT.querySelector(".room-panel");
+        if (!panel) return;
+        const top = Math.max(0, panel.getBoundingClientRect().top + window.scrollY - 18);
+        window.scrollTo({
+            top,
+            behavior: reduceMotion ? "auto" : "smooth"
+        });
+    });
 }
 
 function syncAmbientSound() {
@@ -926,7 +1013,7 @@ function syncAmbientSound() {
 }
 
 function trapModalFocus(event) {
-    const modal = ROOT.querySelector(".artifact-modal");
+    const modal = ROOT.querySelector(".artifact-drawer.is-open");
     if (!modal) return;
     const focusable = Array.from(modal.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"));
     if (focusable.length === 0) return;
@@ -1251,30 +1338,39 @@ function renderArtifactSvg(prefix, viewBox, inner) {
         <svg class="artifact-svg" viewBox="${viewBox}" aria-hidden="true" focusable="false">
             <defs>
                 <filter id="${prefix}-shadow" x="-30%" y="-30%" width="160%" height="180%">
-                    <feDropShadow dx="0" dy="18" stdDeviation="14" flood-color="#000000" flood-opacity="0.32"></feDropShadow>
+                    <feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#000000" flood-opacity="0.28"></feDropShadow>
                 </filter>
                 <linearGradient id="${prefix}-casing" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#5a3d2a"></stop>
-                    <stop offset="55%" stop-color="#2c1c14"></stop>
+                    <stop offset="0%" stop-color="#6a4a34"></stop>
+                    <stop offset="38%" stop-color="#3a281d"></stop>
                     <stop offset="100%" stop-color="#120b08"></stop>
                 </linearGradient>
                 <linearGradient id="${prefix}-edge" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#f2d1a4"></stop>
-                    <stop offset="55%" stop-color="#be8854"></stop>
+                    <stop offset="0%" stop-color="#f4dfbd"></stop>
+                    <stop offset="56%" stop-color="#c58b55"></stop>
                     <stop offset="100%" stop-color="#7f5331"></stop>
                 </linearGradient>
+                <linearGradient id="${prefix}-trim" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#f0d8af"></stop>
+                    <stop offset="45%" stop-color="#b7814d"></stop>
+                    <stop offset="100%" stop-color="#5e3922"></stop>
+                </linearGradient>
                 <linearGradient id="${prefix}-glass" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#f3f0d5"></stop>
-                    <stop offset="48%" stop-color="#b7c8b5"></stop>
-                    <stop offset="100%" stop-color="#5d6b63"></stop>
+                    <stop offset="0%" stop-color="#fbf7ea"></stop>
+                    <stop offset="42%" stop-color="#bdcab9"></stop>
+                    <stop offset="100%" stop-color="#53615b"></stop>
                 </linearGradient>
                 <linearGradient id="${prefix}-accent" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#f4dcb0"></stop>
-                    <stop offset="100%" stop-color="#c98d54"></stop>
+                    <stop offset="0%" stop-color="#f6dfb7"></stop>
+                    <stop offset="100%" stop-color="#cb8d50"></stop>
                 </linearGradient>
                 <radialGradient id="${prefix}-glow" cx="50%" cy="45%" r="70%">
-                    <stop offset="0%" stop-color="#f6d59f" stop-opacity="0.36"></stop>
+                    <stop offset="0%" stop-color="#f6d59f" stop-opacity="0.34"></stop>
                     <stop offset="100%" stop-color="#f6d59f" stop-opacity="0"></stop>
+                </radialGradient>
+                <radialGradient id="${prefix}-sheen" cx="36%" cy="22%" r="78%">
+                    <stop offset="0%" stop-color="#fff6ea" stop-opacity="0.18"></stop>
+                    <stop offset="100%" stop-color="#fff6ea" stop-opacity="0"></stop>
                 </radialGradient>
             </defs>
             ${inner}
@@ -1283,51 +1379,59 @@ function renderArtifactSvg(prefix, viewBox, inner) {
 }
 function renderPager(prefix) {
     return renderArtifactSvg(prefix, "0 0 260 260", `
-        <ellipse cx="132" cy="226" rx="58" ry="16" fill="url(#${prefix}-glow)" opacity="0.42"></ellipse>
+        <ellipse cx="130" cy="226" rx="56" ry="15" fill="url(#${prefix}-glow)" opacity="0.4"></ellipse>
         <g filter="url(#${prefix}-shadow)">
-            <path d="M144 30h10l10 34h-10z" fill="url(#${prefix}-edge)"></path>
-            <rect x="74" y="48" width="132" height="168" rx="26" fill="url(#${prefix}-casing)" stroke="#f0d4aa" stroke-opacity="0.36" stroke-width="4"></rect>
-            <rect x="92" y="72" width="96" height="44" rx="12" fill="url(#${prefix}-glass)"></rect>
-            <rect x="102" y="84" width="54" height="8" rx="4" fill="#f7f5e5" fill-opacity="0.84"></rect>
-            <rect x="102" y="98" width="74" height="6" rx="3" fill="#c7d9c4" fill-opacity="0.72"></rect>
-            <rect x="132" y="56" width="26" height="8" rx="4" fill="#f0d9bc" fill-opacity="0.6"></rect>
+            <path d="M126 36h8l8 24h-8z" fill="url(#${prefix}-trim)"></path>
+            <path d="M142 30h10l10 34h-10z" fill="url(#${prefix}-edge)"></path>
+            <rect x="74" y="48" width="112" height="170" rx="24" fill="url(#${prefix}-casing)" stroke="#f0d4aa" stroke-opacity="0.36" stroke-width="4"></rect>
+            <rect x="80" y="54" width="100" height="160" rx="20" fill="url(#${prefix}-sheen)" opacity="0.8"></rect>
+            <rect x="92" y="74" width="76" height="42" rx="11" fill="#0e0907" stroke="url(#${prefix}-trim)" stroke-opacity="0.7" stroke-width="3"></rect>
+            <rect x="100" y="82" width="60" height="26" rx="8" fill="url(#${prefix}-glass)"></rect>
+            <rect x="106" y="88" width="30" height="6" rx="3" fill="#f7f3e5" fill-opacity="0.88"></rect>
+            <rect x="106" y="98" width="42" height="4" rx="2" fill="#d2dccb" fill-opacity="0.8"></rect>
+            <rect x="126" y="58" width="20" height="7" rx="3.5" fill="#f0d9bc" fill-opacity="0.72"></rect>
             <g fill="url(#${prefix}-accent)">
-                <circle cx="102" cy="136" r="6"></circle><circle cx="128" cy="136" r="6"></circle><circle cx="154" cy="136" r="6"></circle><circle cx="180" cy="136" r="6"></circle>
-                <circle cx="102" cy="160" r="6"></circle><circle cx="128" cy="160" r="6"></circle><circle cx="154" cy="160" r="6"></circle><circle cx="180" cy="160" r="6"></circle>
-                <circle cx="115" cy="184" r="6"></circle><circle cx="141" cy="184" r="6"></circle><circle cx="167" cy="184" r="6"></circle>
+                <circle cx="102" cy="138" r="5.5"></circle><circle cx="126" cy="138" r="5.5"></circle><circle cx="150" cy="138" r="5.5"></circle><circle cx="174" cy="138" r="5.5"></circle>
+                <circle cx="102" cy="160" r="5.5"></circle><circle cx="126" cy="160" r="5.5"></circle><circle cx="150" cy="160" r="5.5"></circle><circle cx="174" cy="160" r="5.5"></circle>
+                <circle cx="114" cy="182" r="5.5"></circle><circle cx="138" cy="182" r="5.5"></circle><circle cx="162" cy="182" r="5.5"></circle>
             </g>
-            <path d="M86 64c0-9 7-16 16-16h20v18h-36z" fill="#090605" opacity="0.48"></path>
+            <path d="M92 60c0-8 6-14 14-14h16v14H92z" fill="#090605" opacity="0.46"></path>
         </g>
     `);
 }
 
 function renderTelephone(prefix) {
     return renderArtifactSvg(prefix, "0 0 340 240", `
-        <ellipse cx="170" cy="214" rx="96" ry="18" fill="url(#${prefix}-glow)" opacity="0.42"></ellipse>
+        <ellipse cx="170" cy="214" rx="90" ry="14" fill="url(#${prefix}-glow)" opacity="0.34"></ellipse>
         <g filter="url(#${prefix}-shadow)">
-            <path d="M82 102c0-38 36-66 88-66 24 0 44 6 60 16 18 12 30 28 30 50 0 10-4 18-12 22-6-7-14-12-24-12-12 0-22 6-30 12-12-4-24-6-37-6-17 0-33 4-46 12-8-4-12-12-12-28z" fill="url(#${prefix}-casing)" stroke="#f0d4aa" stroke-opacity="0.34" stroke-width="4"></path>
-            <path d="M92 118c18 12 38 20 78 20 40 0 58-8 84-20l18 56c4 12-4 24-16 24H82c-12 0-20-12-16-24z" fill="url(#${prefix}-casing)" stroke="#e7c58f" stroke-opacity="0.28" stroke-width="4"></path>
-            <circle cx="170" cy="154" r="34" fill="#120b08" stroke="url(#${prefix}-edge)" stroke-width="4"></circle>
-            <circle cx="170" cy="154" r="22" fill="#241612" stroke="#f3d1a4" stroke-opacity="0.4" stroke-width="3"></circle>
-            <g fill="url(#${prefix}-accent)">
-                <circle cx="170" cy="124" r="4.5"></circle><circle cx="195" cy="133" r="4.5"></circle><circle cx="205" cy="154" r="4.5"></circle><circle cx="195" cy="175" r="4.5"></circle>
-                <circle cx="170" cy="184" r="4.5"></circle><circle cx="145" cy="175" r="4.5"></circle><circle cx="135" cy="154" r="4.5"></circle><circle cx="145" cy="133" r="4.5"></circle>
+            <path d="M116 84c14-18 32-27 54-27s40 9 54 27l-8 15c-14-7-29-10-46-10s-32 3-46 10z" fill="url(#${prefix}-casing)" stroke="#f0d4aa" stroke-opacity="0.28" stroke-width="4"></path>
+            <path d="M98 137c16 8 40 12 72 12s56-4 72-12l10 30c4 12-5 23-18 23H106c-13 0-22-11-18-23z" fill="url(#${prefix}-casing)" stroke="#e8c58f" stroke-opacity="0.24" stroke-width="4"></path>
+            <path d="M118 145c14 5 31 8 52 8s38-3 52-8" fill="none" stroke="url(#${prefix}-sheen)" stroke-width="7" stroke-linecap="round" opacity="0.2"></path>
+            <circle cx="170" cy="157" r="24" fill="#120b09" stroke="url(#${prefix}-trim)" stroke-width="4"></circle>
+            <circle cx="170" cy="157" r="11" fill="#2a1a14" stroke="#f2d5ab" stroke-opacity="0.24" stroke-width="2.5"></circle>
+            <g fill="url(#${prefix}-accent)" opacity="0.9">
+                <circle cx="170" cy="135" r="3"></circle><circle cx="185" cy="142" r="3"></circle><circle cx="191" cy="157" r="3"></circle><circle cx="185" cy="172" r="3"></circle>
+                <circle cx="170" cy="179" r="3"></circle><circle cx="155" cy="172" r="3"></circle><circle cx="149" cy="157" r="3"></circle><circle cx="155" cy="142" r="3"></circle>
             </g>
-            <path d="M112 82c18-18 42-28 58-28 21 0 40 12 58 28l-12 20c-16-12-28-18-46-18-15 0-31 6-46 18z" fill="#0f0907" opacity="0.58"></path>
+            <path d="M136 96h13l2 10h-14zm55 0h13l-2 10h-14z" fill="url(#${prefix}-trim)" opacity="0.68"></path>
+            <path d="M115 187h24l-4 7h-16zm86 0h24l-4 7h-16z" fill="#140c0a" opacity="0.68"></path>
         </g>
     `);
 }
 
 function renderNokia(prefix) {
     return renderArtifactSvg(prefix, "0 0 240 320", `
-        <ellipse cx="120" cy="284" rx="54" ry="14" fill="url(#${prefix}-glow)" opacity="0.42"></ellipse>
+        <ellipse cx="120" cy="286" rx="56" ry="14" fill="url(#${prefix}-glow)" opacity="0.38"></ellipse>
         <g filter="url(#${prefix}-shadow)">
-            <rect x="56" y="32" width="128" height="246" rx="34" fill="url(#${prefix}-casing)" stroke="#f0d4aa" stroke-opacity="0.36" stroke-width="4"></rect>
+            <rect x="56" y="30" width="128" height="250" rx="34" fill="url(#${prefix}-casing)" stroke="#f0d4aa" stroke-opacity="0.34" stroke-width="4"></rect>
+            <rect x="62" y="36" width="116" height="238" rx="30" fill="url(#${prefix}-sheen)" opacity="0.82"></rect>
             <rect x="88" y="54" width="64" height="8" rx="4" fill="#e9d7b6" fill-opacity="0.64"></rect>
-            <rect x="78" y="78" width="84" height="66" rx="12" fill="url(#${prefix}-glass)"></rect>
-            <rect x="90" y="92" width="48" height="8" rx="4" fill="#fbf7ed" fill-opacity="0.9"></rect>
-            <rect x="90" y="108" width="58" height="6" rx="3" fill="#d0dfc8" fill-opacity="0.72"></rect>
-            <path d="M82 160h76l22 24c4 4 3 10-2 13l-20 12c-4 2-9 1-11-3l-7-11H99l-7 11c-2 4-7 5-11 3l-20-12c-5-3-6-9-2-13z" fill="url(#${prefix}-edge)"></path>
+            <rect x="78" y="78" width="84" height="66" rx="12" fill="#0d0806" stroke="url(#${prefix}-trim)" stroke-opacity="0.7" stroke-width="3"></rect>
+            <rect x="86" y="86" width="68" height="50" rx="10" fill="url(#${prefix}-glass)"></rect>
+            <rect x="94" y="94" width="40" height="6" rx="3" fill="#fbf7ed" fill-opacity="0.88"></rect>
+            <rect x="94" y="106" width="50" height="4" rx="2" fill="#d0dfc8" fill-opacity="0.78"></rect>
+            <path d="M84 160h72l18 20c4 4 3 10-2 13l-16 10c-5 3-11 1-13-3l-6-10h-34l-6 10c-2 4-8 6-13 3l-16-10c-5-3-6-9-2-13z" fill="url(#${prefix}-trim)"></path>
+            <circle cx="120" cy="175" r="10" fill="#2c1d15" stroke="#f3d1a4" stroke-opacity="0.36" stroke-width="3"></circle>
             <g fill="url(#${prefix}-accent)">
                 <rect x="86" y="210" width="18" height="14" rx="5"></rect><rect x="111" y="210" width="18" height="14" rx="5"></rect><rect x="136" y="210" width="18" height="14" rx="5"></rect>
                 <rect x="86" y="230" width="18" height="14" rx="5"></rect><rect x="111" y="230" width="18" height="14" rx="5"></rect><rect x="136" y="230" width="18" height="14" rx="5"></rect>
@@ -1339,45 +1443,49 @@ function renderNokia(prefix) {
 
 function renderAnsweringMachine(prefix) {
     return renderArtifactSvg(prefix, "0 0 320 240", `
-        <ellipse cx="160" cy="212" rx="88" ry="16" fill="url(#${prefix}-glow)" opacity="0.4"></ellipse>
+        <ellipse cx="160" cy="214" rx="88" ry="14" fill="url(#${prefix}-glow)" opacity="0.36"></ellipse>
         <g filter="url(#${prefix}-shadow)">
             <path d="M74 90c0-14 12-26 26-26h120c14 0 26 12 26 26v76c0 14-12 26-26 26H100c-14 0-26-12-26-26z" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.34" stroke-width="4"></path>
-            <rect x="94" y="86" width="132" height="58" rx="16" fill="#100a08" stroke="#f2d1a4" stroke-opacity="0.22" stroke-width="3"></rect>
-            <rect x="108" y="100" width="42" height="30" rx="10" fill="url(#${prefix}-glass)"></rect>
-            <rect x="160" y="100" width="52" height="14" rx="6" fill="#2a1a14" stroke="url(#${prefix}-edge)" stroke-width="2"></rect>
-            <rect x="160" y="120" width="38" height="8" rx="4" fill="#f3d8b6" fill-opacity="0.68"></rect>
-            <g fill="url(#${prefix}-accent)"><rect x="98" y="158" width="26" height="14" rx="7"></rect><rect x="132" y="158" width="26" height="14" rx="7"></rect><rect x="166" y="158" width="26" height="14" rx="7"></rect><rect x="200" y="158" width="26" height="14" rx="7"></rect></g>
-            <path d="M88 76h34l10-18h56l10 18h34" fill="none" stroke="#e9d0aa" stroke-opacity="0.42" stroke-width="5" stroke-linecap="round"></path>
+            <rect x="82" y="74" width="156" height="14" rx="7" fill="#140d0a" stroke="url(#${prefix}-trim)" stroke-opacity="0.64" stroke-width="3"></rect>
+            <rect x="94" y="88" width="132" height="56" rx="16" fill="#100a08" stroke="#f2d1a4" stroke-opacity="0.2" stroke-width="3"></rect>
+            <rect x="108" y="98" width="46" height="34" rx="10" fill="url(#${prefix}-glass)"></rect>
+            <rect x="164" y="100" width="48" height="12" rx="6" fill="#2a1a14" stroke="url(#${prefix}-trim)" stroke-width="2"></rect>
+            <rect x="164" y="118" width="36" height="8" rx="4" fill="#f3d8b6" fill-opacity="0.68"></rect>
+            <path d="M104 152h112" stroke="#f2d1a4" stroke-opacity="0.24" stroke-width="4" stroke-linecap="round"></path>
+            <g fill="url(#${prefix}-accent)"><rect x="98" y="162" width="26" height="14" rx="7"></rect><rect x="132" y="162" width="26" height="14" rx="7"></rect><rect x="166" y="162" width="26" height="14" rx="7"></rect><rect x="200" y="162" width="26" height="14" rx="7"></rect></g>
         </g>
     `);
 }
 
 function renderWalkman(prefix) {
     return renderArtifactSvg(prefix, "0 0 280 300", `
-        <ellipse cx="140" cy="270" rx="64" ry="16" fill="url(#${prefix}-glow)" opacity="0.42"></ellipse>
+        <ellipse cx="140" cy="270" rx="68" ry="15" fill="url(#${prefix}-glow)" opacity="0.38"></ellipse>
         <g filter="url(#${prefix}-shadow)">
-            <rect x="62" y="46" width="156" height="204" rx="26" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.34" stroke-width="4"></rect>
-            <rect x="88" y="78" width="104" height="104" rx="20" fill="#120b08" stroke="#efd0a5" stroke-opacity="0.26" stroke-width="3"></rect>
-            <circle cx="120" cy="130" r="24" fill="url(#${prefix}-glass)"></circle><circle cx="160" cy="130" r="24" fill="url(#${prefix}-glass)"></circle>
-            <circle cx="120" cy="130" r="10" fill="#1d120d"></circle><circle cx="160" cy="130" r="10" fill="#1d120d"></circle>
-            <path d="M76 210h128" stroke="#f3d7b2" stroke-opacity="0.36" stroke-width="4" stroke-linecap="round"></path>
+            <rect x="62" y="46" width="156" height="206" rx="28" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.34" stroke-width="4"></rect>
+            <rect x="70" y="54" width="140" height="190" rx="24" fill="url(#${prefix}-sheen)" opacity="0.82"></rect>
+            <rect x="84" y="74" width="112" height="108" rx="20" fill="#100a08" stroke="#efd0a5" stroke-opacity="0.26" stroke-width="3"></rect>
+            <circle cx="120" cy="128" r="25" fill="url(#${prefix}-glass)"></circle><circle cx="160" cy="128" r="25" fill="url(#${prefix}-glass)"></circle>
+            <circle cx="120" cy="128" r="10" fill="#1d120d"></circle><circle cx="160" cy="128" r="10" fill="#1d120d"></circle>
+            <rect x="94" y="196" width="92" height="8" rx="4" fill="#f3d7b2" fill-opacity="0.44"></rect>
             <g fill="url(#${prefix}-accent)"><rect x="96" y="220" width="22" height="14" rx="4"></rect><rect x="124" y="220" width="32" height="14" rx="4"></rect><rect x="162" y="220" width="22" height="14" rx="4"></rect></g>
-            <path d="M218 98c18 6 28 20 28 42 0 20-8 32-20 42" fill="none" stroke="url(#${prefix}-edge)" stroke-width="6" stroke-linecap="round"></path>
+            <path d="M214 98c20 8 30 22 30 44 0 18-7 30-18 42" fill="none" stroke="url(#${prefix}-trim)" stroke-width="6" stroke-linecap="round"></path>
         </g>
     `);
 }
 
 function renderVhs(prefix) {
     return renderArtifactSvg(prefix, "0 0 340 220", `
-        <ellipse cx="170" cy="196" rx="104" ry="14" fill="url(#${prefix}-glow)" opacity="0.38"></ellipse>
+        <ellipse cx="170" cy="198" rx="102" ry="14" fill="url(#${prefix}-glow)" opacity="0.34"></ellipse>
         <g filter="url(#${prefix}-shadow)">
             <path d="M62 66h216c14 0 26 12 26 26v38c0 14-12 26-26 26H62c-14 0-26-12-26-26V92c0-14 12-26 26-26z" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.34" stroke-width="4"></path>
             <rect x="76" y="84" width="188" height="54" rx="14" fill="#120b08" stroke="#efd0a5" stroke-opacity="0.24" stroke-width="3"></rect>
-            <rect x="96" y="92" width="74" height="38" rx="8" fill="#20140f"></rect><rect x="178" y="92" width="56" height="38" rx="8" fill="url(#${prefix}-glass)"></rect>
-            <circle cx="126" cy="111" r="18" fill="url(#${prefix}-glass)"></circle><circle cx="208" cy="111" r="18" fill="url(#${prefix}-glass)"></circle>
-            <circle cx="126" cy="111" r="7" fill="#1b110d"></circle><circle cx="208" cy="111" r="7" fill="#1b110d"></circle>
-            <rect x="104" y="148" width="132" height="8" rx="4" fill="url(#${prefix}-edge)"></rect>
-            <path d="M48 156l22 24h200l22-24" fill="#100906" opacity="0.32"></path>
+            <rect x="88" y="92" width="82" height="38" rx="8" fill="#1c120d"></rect>
+            <rect x="178" y="92" width="56" height="38" rx="8" fill="url(#${prefix}-glass)"></rect>
+            <circle cx="124" cy="111" r="17" fill="url(#${prefix}-glass)"></circle><circle cx="208" cy="111" r="17" fill="url(#${prefix}-glass)"></circle>
+            <circle cx="124" cy="111" r="7" fill="#1b110d"></circle><circle cx="208" cy="111" r="7" fill="#1b110d"></circle>
+            <rect x="112" y="144" width="116" height="10" rx="5" fill="url(#${prefix}-trim)"></rect>
+            <rect x="62" y="70" width="216" height="12" rx="6" fill="url(#${prefix}-sheen)" opacity="0.42"></rect>
+            <path d="M48 156l20 20h204l20-20" fill="#100906" opacity="0.28"></path>
         </g>
     `);
 }
@@ -1385,14 +1493,15 @@ function renderVhs(prefix) {
 function renderCrtMonitor(prefix) {
     return renderArtifactSvg(prefix, "0 0 340 260", `
         <defs><radialGradient id="${prefix}-screen" cx="42%" cy="38%" r="70%"><stop offset="0%" stop-color="#dce8b6"></stop><stop offset="55%" stop-color="#7ea074"></stop><stop offset="100%" stop-color="#243a2d"></stop></radialGradient></defs>
-        <ellipse cx="170" cy="228" rx="96" ry="16" fill="url(#${prefix}-glow)" opacity="0.44"></ellipse>
+        <ellipse cx="170" cy="228" rx="96" ry="16" fill="url(#${prefix}-glow)" opacity="0.38"></ellipse>
         <g filter="url(#${prefix}-shadow)">
             <path d="M74 58h192c16 0 28 12 28 28v88c0 16-12 28-28 28H74c-16 0-28-12-28-28V86c0-16 12-28 28-28z" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.36" stroke-width="4"></path>
-            <rect x="72" y="82" width="196" height="96" rx="20" fill="#120b08" stroke="#f0d4aa" stroke-opacity="0.22" stroke-width="3"></rect>
-            <rect x="90" y="92" width="160" height="76" rx="16" fill="url(#${prefix}-screen)"></rect>
+            <rect x="72" y="82" width="196" height="96" rx="20" fill="#0f0907" stroke="#f0d4aa" stroke-opacity="0.22" stroke-width="3"></rect>
+            <rect x="88" y="92" width="164" height="76" rx="16" fill="url(#${prefix}-screen)"></rect>
+            <path d="M102 96c28 12 54 18 120 18" stroke="#f6f8dc" stroke-opacity="0.24" stroke-width="4" stroke-linecap="round"></path>
             <path d="M122 208h96l18 28H104z" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.28" stroke-width="4"></path>
-            <rect x="110" y="232" width="120" height="12" rx="6" fill="url(#${prefix}-edge)"></rect>
-            <path d="M104 96c26 12 52 18 116 18" stroke="#f6f8dc" stroke-opacity="0.3" stroke-width="4" stroke-linecap="round"></path>
+            <rect x="110" y="232" width="120" height="12" rx="6" fill="url(#${prefix}-trim)"></rect>
+            <path d="M258 90v96" stroke="#f0d4aa" stroke-opacity="0.12" stroke-width="3"></path>
             <circle cx="252" cy="188" r="4" fill="#dce8b6"></circle>
         </g>
     `);
@@ -1400,37 +1509,40 @@ function renderCrtMonitor(prefix) {
 
 function renderPrinter(prefix) {
     return renderArtifactSvg(prefix, "0 0 360 240", `
-        <ellipse cx="180" cy="212" rx="102" ry="14" fill="url(#${prefix}-glow)" opacity="0.38"></ellipse>
+        <ellipse cx="180" cy="214" rx="102" ry="14" fill="url(#${prefix}-glow)" opacity="0.34"></ellipse>
         <g filter="url(#${prefix}-shadow)">
             <path d="M70 92h220c16 0 30 13 30 30v28c0 16-14 30-30 30H70c-16 0-30-14-30-30v-28c0-17 14-30 30-30z" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.34" stroke-width="4"></path>
-            <path d="M118 52h124l16 40H102z" fill="#f0e2bf" fill-opacity="0.95" stroke="#d0b48f" stroke-width="3"></path>
-            <path d="M112 60h8v54h-8zm120 0h8v54h-8z" fill="#c29b62"></path>
-            <path d="M130 68h100" stroke="#d0b48f" stroke-dasharray="4 6" stroke-width="3"></path>
-            <rect x="82" y="116" width="196" height="34" rx="14" fill="#100906" stroke="#efd0a5" stroke-opacity="0.24" stroke-width="3"></rect>
-            <rect x="112" y="126" width="126" height="10" rx="5" fill="url(#${prefix}-edge)"></rect>
-            <rect x="98" y="158" width="164" height="10" rx="5" fill="#f1e4c4"></rect>
+            <path d="M118 48h124l16 42H102z" fill="#f0e2bf" fill-opacity="0.96" stroke="#d0b48f" stroke-width="3"></path>
+            <path d="M112 56h8v54h-8zm120 0h8v54h-8z" fill="#c29b62"></path>
+            <path d="M130 66h100" stroke="#d0b48f" stroke-dasharray="4 6" stroke-width="3"></path>
+            <rect x="82" y="114" width="196" height="36" rx="14" fill="#100906" stroke="#efd0a5" stroke-opacity="0.24" stroke-width="3"></rect>
+            <rect x="112" y="126" width="126" height="10" rx="5" fill="url(#${prefix}-trim)"></rect>
+            <rect x="98" y="158" width="164" height="12" rx="6" fill="#f1e4c4"></rect>
+            <circle cx="98" cy="132" r="4" fill="url(#${prefix}-accent)"></circle>
+            <circle cx="262" cy="132" r="4" fill="url(#${prefix}-accent)"></circle>
         </g>
     `);
 }
 
 function renderFloppy(prefix) {
     return renderArtifactSvg(prefix, "0 0 240 260", `
-        <ellipse cx="120" cy="228" rx="56" ry="14" fill="url(#${prefix}-glow)" opacity="0.38"></ellipse>
+        <ellipse cx="120" cy="230" rx="56" ry="13" fill="url(#${prefix}-glow)" opacity="0.34"></ellipse>
         <g filter="url(#${prefix}-shadow)">
             <path d="M66 40h94l36 36v134c0 14-12 26-26 26H70c-14 0-26-12-26-26V66c0-14 8-26 22-26z" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.36" stroke-width="4"></path>
-            <path d="M160 40v36h36" fill="#1a100d" opacity="0.52"></path>
-            <rect x="84" y="60" width="72" height="38" rx="8" fill="url(#${prefix}-glass)"></rect>
-            <rect x="96" y="76" width="48" height="10" rx="5" fill="#f7f5eb" fill-opacity="0.86"></rect>
-            <rect x="76" y="118" width="88" height="24" rx="6" fill="#241612" stroke="url(#${prefix}-edge)" stroke-width="3"></rect>
-            <rect x="90" y="152" width="60" height="48" rx="10" fill="#f1e4c4" fill-opacity="0.9"></rect>
-            <rect x="154" y="168" width="16" height="26" rx="4" fill="#0f0806"></rect>
+            <path d="M160 40v36h36" fill="#1a100d" opacity="0.54"></path>
+            <rect x="84" y="60" width="72" height="38" rx="8" fill="#0f0907" stroke="url(#${prefix}-trim)" stroke-opacity="0.72" stroke-width="3"></rect>
+            <rect x="92" y="66" width="56" height="24" rx="6" fill="url(#${prefix}-glass)"></rect>
+            <rect x="96" y="74" width="48" height="8" rx="4" fill="#f7f5eb" fill-opacity="0.84"></rect>
+            <rect x="76" y="118" width="88" height="24" rx="6" fill="#241612" stroke="url(#${prefix}-trim)" stroke-width="3"></rect>
+            <rect x="90" y="150" width="60" height="50" rx="10" fill="#f1e4c4" fill-opacity="0.9"></rect>
+            <rect x="154" y="166" width="16" height="28" rx="4" fill="#0f0806"></rect>
         </g>
     `);
 }
 
 function renderTapeRecorder(prefix) {
     return renderArtifactSvg(prefix, "0 0 360 240", `
-        <ellipse cx="180" cy="212" rx="102" ry="15" fill="url(#${prefix}-glow)" opacity="0.42"></ellipse>
+        <ellipse cx="180" cy="214" rx="104" ry="15" fill="url(#${prefix}-glow)" opacity="0.38"></ellipse>
         <g filter="url(#${prefix}-shadow)">
             <rect x="52" y="58" width="256" height="136" rx="28" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.36" stroke-width="4"></rect>
             <rect x="74" y="82" width="212" height="72" rx="18" fill="#120b08" stroke="#efd0a5" stroke-opacity="0.22" stroke-width="3"></rect>
@@ -1438,7 +1550,8 @@ function renderTapeRecorder(prefix) {
             <circle cx="122" cy="118" r="10" fill="#1b110d"></circle><circle cx="238" cy="118" r="10" fill="#1b110d"></circle>
             <path d="M122 86l7 18 18 7-18 7-7 18-7-18-18-7 18-7z" fill="#f4d8b2" fill-opacity="0.52"></path>
             <path d="M238 86l7 18 18 7-18 7-7 18-7-18-18-7 18-7z" fill="#f4d8b2" fill-opacity="0.52"></path>
-            <rect x="146" y="92" width="68" height="18" rx="6" fill="url(#${prefix}-edge)"></rect>
+            <rect x="144" y="92" width="72" height="18" rx="6" fill="url(#${prefix}-trim)"></rect>
+            <rect x="146" y="118" width="68" height="10" rx="5" fill="#f0ddbe" fill-opacity="0.72"></rect>
             <g fill="url(#${prefix}-accent)"><circle cx="122" cy="170" r="8"></circle><circle cx="152" cy="170" r="8"></circle><circle cx="182" cy="170" r="8"></circle><circle cx="212" cy="170" r="8"></circle></g>
         </g>
     `);
@@ -1446,11 +1559,12 @@ function renderTapeRecorder(prefix) {
 
 function renderFallbackVisual(prefix) {
     return renderArtifactSvg(prefix, "0 0 220 220", `
-        <ellipse cx="110" cy="192" rx="44" ry="12" fill="url(#${prefix}-glow)" opacity="0.34"></ellipse>
+        <ellipse cx="110" cy="192" rx="44" ry="12" fill="url(#${prefix}-glow)" opacity="0.3"></ellipse>
         <g filter="url(#${prefix}-shadow)">
             <rect x="56" y="42" width="108" height="132" rx="24" fill="url(#${prefix}-casing)" stroke="#efcf9d" stroke-opacity="0.32" stroke-width="4"></rect>
-            <rect x="76" y="68" width="68" height="44" rx="12" fill="url(#${prefix}-glass)"></rect>
-            <rect x="82" y="126" width="56" height="10" rx="5" fill="url(#${prefix}-edge)"></rect>
+            <rect x="76" y="68" width="68" height="44" rx="12" fill="#0f0907" stroke="url(#${prefix}-trim)" stroke-opacity="0.72" stroke-width="3"></rect>
+            <rect x="84" y="76" width="52" height="28" rx="8" fill="url(#${prefix}-glass)"></rect>
+            <rect x="82" y="126" width="56" height="10" rx="5" fill="url(#${prefix}-trim)"></rect>
         </g>
     `);
 }
