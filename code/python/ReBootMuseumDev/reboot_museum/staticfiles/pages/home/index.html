@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="description"
+        content="Interactive Museum of forgotten signals, preserved media, and nostalgic personal technologies."
+    >
+    <meta name="museum-data-url" content="{% static 'data/exhibits.json' %}">
+    <meta name="museum-image-base-url" content="{% static 'images/home/' %}">
+    <title>Re:BootMuseum</title>
+    <link rel="stylesheet" href="{% static 'css/home/style.css' %}">
+</head>
+<body>
+    <div id="root">
+        <noscript>
+            Re:BootMuseum needs JavaScript enabled to open the interactive exhibition.
+        </noscript>
+    </div>
+    <script id="museum-db-context" type="application/json">
+        {
+            "rooms": [
+                {% for room in rooms %}
+                {
+                    "id": {{ room.id }},
+                    "slug": "{{ room.slug|escapejs }}",
+                    "title_cs": "{{ room.title_cs|escapejs }}",
+                    "title_en": "{{ room.title_en|escapejs }}",
+                    "subtitle_cs": "{{ room.subtitle_cs|default_if_none:''|escapejs }}",
+                    "subtitle_en": "{{ room.subtitle_en|default_if_none:''|escapejs }}",
+                    "description_cs": "{{ room.description_cs|default_if_none:''|escapejs }}",
+                    "description_en": "{{ room.description_en|default_if_none:''|escapejs }}",
+                    "atmosphere_cs": "{{ room.atmosphere_cs|default_if_none:''|escapejs }}",
+                    "atmosphere_en": "{{ room.atmosphere_en|default_if_none:''|escapejs }}",
+                    "theme_key": "{{ room.theme_key|default_if_none:''|escapejs }}",
+                    "ambient_key": "{{ room.ambient_key|default_if_none:''|escapejs }}",
+                    "order": {{ room.order|default:0 }},
+                    "is_active": {{ room.is_active|yesno:"true,false" }}
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            "categories": [
+                {% for category in categories %}
+                {
+                    "id": {{ category.id }},
+                    "slug": "{{ category.slug|escapejs }}",
+                    "title_cs": "{{ category.title_cs|escapejs }}",
+                    "title_en": "{{ category.title_en|escapejs }}",
+                    "order": {{ category.order|default:0 }},
+                    "is_active": {{ category.is_active|yesno:"true,false" }}
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            "exhibits": [
+                {% for exhibit in exhibits %}
+                {
+                    "id": {{ exhibit.id }},
+                    "slug": "{{ exhibit.slug|escapejs }}",
+                    "room_id": {{ exhibit.room_id }},
+                    "category_id": {{ exhibit.category_id }},
+                    "name_cs": "{{ exhibit.name_cs|escapejs }}",
+                    "name_en": "{{ exhibit.name_en|escapejs }}",
+                    "year_or_era_cs": "{{ exhibit.year_or_era_cs|default_if_none:''|escapejs }}",
+                    "year_or_era_en": "{{ exhibit.year_or_era_en|default_if_none:''|escapejs }}",
+                    "description_cs": "{{ exhibit.description_cs|default_if_none:''|escapejs }}",
+                    "description_en": "{{ exhibit.description_en|default_if_none:''|escapejs }}",
+                    "caption_cs": "{{ exhibit.caption_cs|default_if_none:''|escapejs }}",
+                    "caption_en": "{{ exhibit.caption_en|default_if_none:''|escapejs }}",
+                    "sound_key": "{{ exhibit.sound_key|default_if_none:''|escapejs }}",
+                    "visual_key": "{{ exhibit.visual_key|escapejs }}",
+                    "icon_name": "{{ exhibit.icon_name|default_if_none:''|escapejs }}",
+                    "image_name": "{{ exhibit.image_name|default_if_none:''|escapejs }}",
+                    "image_alt_cs": "{{ exhibit.image_alt_cs|default_if_none:''|escapejs }}",
+                    "image_alt_en": "{{ exhibit.image_alt_en|default_if_none:''|escapejs }}",
+                    "position_x": {{ exhibit.position_x|default:50 }},
+                    "position_y": {{ exhibit.position_y|default:50 }},
+                    "scale": {{ exhibit.scale|default:1 }},
+                    "rotation": {{ exhibit.rotation|default:0 }},
+                    "order": {{ exhibit.order|default:0 }},
+                    "highlight_priority": {{ exhibit.highlight_priority|default:0 }},
+                    "is_active": {{ exhibit.is_active|yesno:"true,false" }}
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }
+    </script>
+    <script type="module" src="{% static 'js/home/app.js' %}"></script>
+</body>
+</html>
