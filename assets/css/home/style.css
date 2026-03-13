@@ -85,6 +85,16 @@ svg {
     display: block;
 }
 
+.artifact-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 1rem 1.8rem rgba(0, 0, 0, 0.32));
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
 .museum-loading-shell,
 .museum-app {
     min-height: 100vh;
@@ -1130,6 +1140,14 @@ svg {
     min-height: 11.8rem;
     display: grid;
     place-items: center;
+}
+
+.artifact-drawer__preview .artifact-image {
+    width: min(100%, 23rem);
+    height: auto;
+    max-height: 100%;
+    object-position: center;
+    filter: drop-shadow(0 1.2rem 2rem rgba(0, 0, 0, 0.34));
 }
 
 .artifact-drawer__content {

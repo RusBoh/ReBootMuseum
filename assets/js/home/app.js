@@ -380,6 +380,8 @@ const AMBIENT_PRESETS = {
 };
 
 const dataSourceMeta = document.querySelector('meta[name="museum-data-url"]');
+const imageBaseMeta = document.querySelector('meta[name="museum-image-base-url"]');
+const embeddedDbContextNode = document.getElementById("museum-db-context");
 const initialRoom = getStoredRoom();
 const CINEMATIC_SPLASH_HOLD_MS = 3200;
 const CINEMATIC_SPLASH_EXIT_MS = 760;
@@ -761,7 +763,7 @@ function renderDrawerPanel(exhibit) {
                 <p class="artifact-drawer__subtitle">${escapeHtml(t(ROOM_DEFINITIONS[exhibit.room].titleKey))} · ${escapeHtml(t(`actions.${config.actionKey}`))}</p>
                 <div class="artifact-drawer__meta">
                     <div class="artifact-drawer__meta-card"><span>${escapeHtml(t("controls.yearOrEra"))}</span><strong>${escapeHtml(localizeExhibit(exhibit, "year_or_era"))}</strong></div>
-                    <div class="artifact-drawer__meta-card"><span>${escapeHtml(t("controls.category"))}</span><strong>${escapeHtml(t(`categories.${exhibit.category}`))}</strong></div>
+                    <div class="artifact-drawer__meta-card"><span>${escapeHtml(t("controls.category"))}</span><strong>${escapeHtml(localizeCategory(exhibit))}</strong></div>
                     <div class="artifact-drawer__meta-card"><span>${escapeHtml(t("controls.room"))}</span><strong>${escapeHtml(t(ROOM_DEFINITIONS[exhibit.room].titleKey))}</strong></div>
                 </div>
                 <p class="artifact-drawer__description">${escapeHtml(localizeExhibit(exhibit, "description"))}</p>
@@ -853,6 +855,11 @@ function renderRoomStage(activeRoom, transitionDirection) {
 }
 
 async function loadSnapshot() {
+    const embeddedSnapshot = loadEmbeddedDbSnapshot();
+    if (embeddedSnapshot) {
+        return embeddedSnapshot;
+    }
+
     const sourceUrl = dataSourceMeta?.content;
     if (!sourceUrl) {
         return { exhibits: FALLBACK_SNAPSHOT.exhibits, usingFallbackData: true };
@@ -871,6 +878,63 @@ async function loadSnapshot() {
     }
 }
 
+function loadEmbeddedDbSnapshot() {
+    if (!embeddedDbContextNode?.textContent?.trim()) {
+        return null;
+    }
+
+    try {
+        const payload = JSON.parse(embeddedDbContextNode.textContent);
+        const rooms = Array.isArray(payload.rooms) ? payload.rooms : [];
+        const categories = Array.isArray(payload.categories) ? payload.categories : [];
+        const exhibits = Array.isArray(payload.exhibits) ? payload.exhibits : [];
+
+        if (!rooms.length || !categories.length || !exhibits.length) {
+            return null;
+        }
+
+        const roomMap = new Map(
+            rooms
+                .filter((room) => coerceBoolean(room.is_active, true))
+                .map((room) => [Number(room.id), room])
+        );
+
+        const categoryMap = new Map(
+            categories
+                .filter((category) => coerceBoolean(category.is_active, true))
+                .map((category) => [Number(category.id), category])
+        );
+
+        const normalizedExhibits = exhibits
+            .map((record) => {
+                const room = roomMap.get(Number(record.room_id));
+                const category = categoryMap.get(Number(record.category_id));
+
+                if (!room || !category) {
+                    return null;
+                }
+
+                return {
+                    ...record,
+                    room: room.slug,
+                    category: slugToCamelKey(category.slug),
+                    category_cs: category.title_cs,
+                    category_en: category.title_en
+                };
+            })
+            .filter(Boolean);
+
+        if (!normalizedExhibits.length) {
+            return null;
+        }
+
+        return { exhibits: normalizedExhibits, usingFallbackData: false };
+    } catch (error) {
+        console.warn("Unable to parse embedded Django museum context.", error);
+        return null;
+    }
+}
+
 function normalizeExhibits(records) {
     return records
         .filter((record) => coerceBoolean(record.is_active, true))
@@ -886,12 +950,18 @@ function normalizeExhibits(records) {
                 soundKey: record.sound_key || "signal",
                 name_cs: String(record.name_cs),
                 name_en: String(record.name_en),
+                category_cs: String(record.category_cs ?? ""),
+                category_en: String(record.category_en ?? ""),
                 year_or_era_cs: String(record.year_or_era_cs),
                 year_or_era_en: String(record.year_or_era_en),
                 description_cs: String(record.description_cs),
                 description_en: String(record.description_en),
                 caption_cs: String(record.caption_cs),
                 caption_en: String(record.caption_en),
+                iconName: String(record.icon_name ?? ""),
+                imageName: String(record.image_name ?? ""),
+                image_alt_cs: String(record.image_alt_cs ?? ""),
+                image_alt_en: String(record.image_alt_en ?? ""),
                 positionX: clampNumber(record.position_x, 12, 88),
                 positionY: clampNumber(record.position_y, 24, 84),
                 scale: clampNumber(record.scale, 0.72, 1.38),
@@ -1199,6 +1269,32 @@ function trapModalFocus(event) {
 function localizeExhibit(exhibit, fieldRoot) {
     return state.locale === "cs" ? exhibit[`${fieldRoot}_cs`] : exhibit[`${fieldRoot}_en`];
 }
+
+function localizeCategory(exhibit) {
+    const localizedLabel = state.locale === "cs" ? exhibit.category_cs : exhibit.category_en;
+    return localizedLabel || t(`categories.${exhibit.category}`);
+}
+
+function localizeImageAlt(exhibit) {
+    const localizedAlt = state.locale === "cs" ? exhibit.image_alt_cs : exhibit.image_alt_en;
+    return localizedAlt || localizeExhibit(exhibit, "name");
+}
+
+function slugToCamelKey(value) {
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/-([a-z0-9])/g, (_, character) => character.toUpperCase());
+}
+
+const ASSET_IMAGE_ALIASES = {
+    "old-telephone": "telefon",
+    "nokia-phone": "nokia",
+    "crt-monitor": "computer",
+    "dot-matrix-printer": "printer",
+    walkman: "cassette player",
+    "vhs-cassette": "cassette"
+};
 
 function t(path) {
     const value = path.split(".").reduce((current, key) => {
@@ -1515,8 +1611,48 @@ function initCustomCursor() {
 }
 
 function renderVisual(exhibit, suffix) {
+    const imageMarkup = renderVisualImage(exhibit);
+    if (imageMarkup) {
+        return imageMarkup;
+    }
+
     const config = VISUAL_REGISTRY[exhibit.visualKey] ?? VISUAL_REGISTRY.fallback;
     return config.render(`${exhibit.slug}-${suffix}`);
+}
+
+function renderVisualImage(exhibit) {
+    const baseUrl = imageBaseMeta?.content;
+    if (!baseUrl) return "";
+
+    const imageSource = resolveArtifactImageSource(exhibit);
+    if (!imageSource) return "";
+
+    return `
+        <img
+            class="artifact-image"
+            src="${escapeAttribute(baseUrl + encodeArtifactImageFilename(imageSource))}"
+            alt="${escapeAttribute(localizeImageAlt(exhibit))}"
+            loading="lazy"
+            decoding="async"
+        >
+    `;
+}
+
+function resolveArtifactImageSource(exhibit) {
+    const candidates = [
+        ASSET_IMAGE_ALIASES[exhibit.imageName],
+        ASSET_IMAGE_ALIASES[exhibit.iconName],
+        ASSET_IMAGE_ALIASES[exhibit.slug],
+        exhibit.imageName,
+        exhibit.iconName,
+        exhibit.slug
+    ];
+
+    return candidates.find((candidate) => typeof candidate === "string" && candidate.trim()) ?? "";
+}
+
+function encodeArtifactImageFilename(source) {
+    return `${encodeURIComponent(source)}.png`;
 }
 
 function renderArtifactSvg(prefix, viewBox, inner) {
