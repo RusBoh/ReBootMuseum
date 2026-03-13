@@ -1,0 +1,27 @@
+Required Django changes: none detected as mandatory for the current project state.
+
+The current frontend files now live in:
+- assets/pages/home/index.html
+- assets/css/home/style.css
+- assets/js/home/app.js
+
+For this structure to work, verify the following Django configuration remains true:
+
+1. In `project/ReBootMuseum/code/python/ReBootMuseumDev/reboot_museum/reboot_museum/settings.py`
+   - `TEMPLATES[0]['DIRS']` must include the project assets template root, for example:
+     `project/ReBootMuseum/assets`
+     or
+     `project/ReBootMuseum/assets/pages`
+
+2. In the same `settings.py`
+   - `STATICFILES_DIRS` must include the project assets root:
+     `project/ReBootMuseum/assets`
+
+3. In `project/ReBootMuseum/code/python/ReBootMuseumDev/reboot_museum/homeapp/views.py`
+   - the homepage view should render:
+     `pages/home/index.html`
+
+4. If deployment uses collected static files
+   - run `collectstatic` after frontend asset changes so `css/home/style.css` and `js/home/app.js` are available in production.
+
+No direct edits to files inside `code/` were made as part of this frontend relocation step.
