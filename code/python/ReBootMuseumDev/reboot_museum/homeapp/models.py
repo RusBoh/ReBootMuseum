@@ -66,11 +66,6 @@ class Exhibit(TimeStampedModel):
 
     sound_key = models.CharField(max_length=80, blank=True)
     visual_key = models.CharField(max_length=80, help_text="Např. old-telephone")
-    icon_name = models.CharField(
-        max_length=120,
-        blank=True,
-        help_text="Název ikonky bez přípony, např. old-telephone",
-    )
 
     image_name = models.CharField(
         max_length=120,
@@ -115,13 +110,10 @@ class Exhibit(TimeStampedModel):
             models.Index(fields=["room", "order"]),
             models.Index(fields=["slug"]),
             models.Index(fields=["is_active"]),
-            models.Index(fields=["icon_name"]),
             models.Index(fields=["image_name"]),
         ]
 
     def save(self, *args, **kwargs):
-        if not self.icon_name:
-            self.icon_name = slugify(self.slug)
 
         if not self.image_name:
             self.image_name = slugify(self.slug)
