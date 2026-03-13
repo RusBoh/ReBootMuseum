@@ -1,0 +1,1 @@
+python code\python\ReBootMuseumDev\reboot_museum\manage.py collectstatic
