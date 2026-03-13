@@ -1,12 +1,23 @@
 {% load static %}
-
 <!DOCTYPE html>
-<html lang="cz">
-    <head>
-        <link rel="stylesheet" href="{% static 'css/home/style.css' %}">
-        <title>Re:BootMuseum</title>
-    </head>
-    <body>
-        Ahoj!!
-    </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="description"
+        content="Interactive Museum of forgotten signals, preserved media, and nostalgic personal technologies."
+    >
+    <meta name="museum-data-url" content="{% static 'data/exhibits.json' %}">
+    <title>Re:BootMuseum</title>
+    <link rel="stylesheet" href="{% static 'css/home/style.css' %}">
+</head>
+<body>
+    <div id="root">
+        <noscript>
+            Re:BootMuseum needs JavaScript enabled to open the interactive exhibition.
+        </noscript>
+    </div>
+    <script type="module" src="{% static 'js/home/app.js' %}"></script>
+</body>
 </html>
