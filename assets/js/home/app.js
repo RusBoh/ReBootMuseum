@@ -686,6 +686,8 @@ const FINAL_ARCHIVE_EXIT_MS = 420;
 const QUIZ_ANSWER_ANIMATION_MS = 520;
 
 const AUDIO_FILE_BY_CUE = {
+    achieve: "achieve.mp3",
+    complete: "complete.mp3",
     signal: "pager-alert.mp3",
     ring: "telephone-ring.mp3",
     "telephone-hum": "telephone-hum.mp3",
@@ -694,11 +696,13 @@ const AUDIO_FILE_BY_CUE = {
     "vhs-startup": "vhs-startup.mp3",
     phosphor: "crt-static.mp3",
     "crt-static": "crt-static.mp3",
-    printer: "disk-drive.mp3",
+    printer: "printer.mp3",
     "disk-drive": "disk-drive.mp3"
 };
 
 const AUDIO_GAIN_BY_CUE = {
+    achieve: 0.4,
+    complete: 0.44,
     signal: 0.8,
     ring: 0.72,
     "telephone-hum": 0.36,
@@ -707,7 +711,7 @@ const AUDIO_GAIN_BY_CUE = {
     "vhs-startup": 0.56,
     phosphor: 0.38,
     "crt-static": 0.38,
-    printer: 0.42,
+    printer: 0.46,
     "disk-drive": 0.42
 };
 
@@ -1760,11 +1764,17 @@ function answerQuiz(roomId, questionId, answerIndex) {
     if (roomState.answers[questionId]) return;
 
     const correct = answerIndex === question.correctIndex;
+    const answeredBefore = getRoomAnsweredCount(roomId);
     roomState.answers[questionId] = { selectedIndex: answerIndex, correct };
     triggerQuizAnswerAnimation(roomId, questionId);
 
     if (state.entered && state.audioEnabled) {
         playQuizAnswerCue(correct);
+        if (answeredBefore + 1 >= questions.length) {
+            window.setTimeout(() => {
+                if (state.entered && state.audioEnabled) audio.playCue("complete", 0.62);
+            }, prefersReducedMotion() ? 0 : 180);
+        }
     }
 
     evaluateAchievements();
@@ -2135,6 +2145,9 @@ function showNextAchievementToast() {
     cancelAchievementTeardown();
     state.achievementToast = nextAchievement;
     state.achievementToastClosing = false;
+    if (state.entered && state.audioEnabled) {
+        audio.playCue("achieve", 0.56);
+    }
     render();
 
     achievementToastTimer = window.setTimeout(() => {
