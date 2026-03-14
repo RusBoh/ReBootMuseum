@@ -116,24 +116,25 @@ const STRINGS = {
         app: {
             documentTitle: "Museum of Forgotten Signals",
             title: "Museum of Forgotten Signals",
-            subtitle: "Interactive Museum / Interaktivní muzeum",
+            subtitle: "A digital museum of forgotten personal technologies",
             splashTitle: "Archive of Forgotten Signals",
             splashSubtitle: "Interactive Museum of Obsolete Technology",
-            curatorNote: "Forgotten signals, old media, abandoned devices, preserved memories.",
-            roomAtlas: "Room navigation",
+            curatorNote: "Forgotten signals, personal devices, magnetic media, preserved memory.",
+            roomAtlas: "Rooms",
             progressRooms: "Rooms explored",
-            progressArtifacts: "Artifacts inspected",
+            progressArtifacts: "Artifacts explored",
             progressKnowledge: "Knowledge score",
             achievementUnlocked: "Archive achievement",
-            sceneHint: "Move around the exhibits slowly. Labels, light, and sound behave like a quiet archive waking up.",
-            drawerEyebrow: "Archive drawer",
-            snapshotLive: "Live frontend snapshot loaded from JSON.",
-            snapshotFallback: "Fallback museum snapshot in use. JSON could not be loaded.",
+            archiveNote: "Archive note",
+            sceneHint: "Move among the artifacts slowly. Labels, light, and sound respond like a quiet archive coming back into focus.",
+            drawerEyebrow: "Archive entry",
+            snapshotLive: "Archive records loaded.",
+            snapshotFallback: "Fallback archive records in use.",
             loading: "Preparing the exhibition",
             loadingDetail: "Restoring rooms, labels, and object records from the archive.",
-            archiveStatus: "Atmospheric archive",
-            archiveStatusQuiet: "Quiet entry",
-            archiveStatusSound: "Sound layer active",
+            archiveStatus: "Museum mode",
+            archiveStatusQuiet: "Quiet mode",
+            archiveStatusSound: "Sound enabled",
             memoryFragmentRestored: "Memory fragment restored",
             archiveResult: "Archive result",
             archiveRestoration: "Archive restoration"
@@ -156,18 +157,19 @@ const STRINGS = {
             category: "Category",
             room: "Room",
             currentRoom: "Current room",
-            openArtifact: "Open artifact details",
+            openArtifact: "Open archive entry",
             jumpToRoom: "Jump to room",
-            archiveReady: "Archive ready",
+            archiveReady: "Museum mode",
+            viewArchiveResult: "View archive result",
             exploreAgain: "Explore again",
             restartArchive: "Restart archive"
         },
         intro: {
-            eyebrow: "Curated access channel",
+            eyebrow: "Curated entry",
             title: "Re:BootMuseum",
             lead: "A digital museum of personal technologies that once carried voices, tapes, deadlines, and private rituals.",
             description: "Walk through five calmer exhibition rooms where pagers wait under low light, CRT glass still remembers phosphor glow, and magnetic media feels almost warm beneath the lamps.",
-            hint: "Sound is optional and restrained. The museum is meant to feel tactile, composed, and jury-friendly rather than noisy.",
+            hint: "Sound is optional and restrained. The museum is meant to feel tactile, calm, and deliberate rather than noisy.",
             roomsStat: "5 rooms",
             devicesStat: "10 devices",
             languageStat: "CZ / EN"
@@ -230,23 +232,25 @@ const STRINGS = {
         },
         quiz: {
             eyebrow: "Knowledge checkpoint",
-            title: "Archive interaction station",
-            intro: "A short prompt tied to the devices in this room. One question at a time, just enough to deepen the exhibit.",
+            title: "Interaction station",
+            intro: "A short prompt tied to the devices in this room. One at a time, just enough to deepen the visit.",
             progress: "Room questions",
             prompt: "Current prompt",
             nextQuestion: "Next question",
             correct: "Correct answer",
             incorrect: "Not quite",
             roomComplete: "This room is complete. The archive has logged your answers.",
-            achievements: "Unlocked notes",
+            continueHint: "Continue the exhibition by opening the next room.",
+            continueAction: "Open next room",
+            achievements: "Archive achievements",
             answerCorrect: "Correct choice",
             answerIncorrect: "Incorrect choice",
             answerAvailable: "Available answer"
         },
         tutorial: {
             title: "Archive hint",
-            lineOne: "Move the cursor over artifacts to explore them.",
-            lineTwo: "Click to open archive entries.",
+            lineOne: "Hover over artifacts or tap them to explore.",
+            lineTwo: "Open each archive entry with a click or tap.",
             dismiss: "Understood"
         },
         ending: {
@@ -265,24 +269,25 @@ const STRINGS = {
         app: {
             documentTitle: "Muzeum zapomenutých signálů",
             title: "Muzeum zapomenutých signálů",
-            subtitle: "Interactive Museum / Interaktivní muzeum",
+            subtitle: "Digitální muzeum zapomenutých osobních technologií",
             splashTitle: "Archiv zapomenutých signálů",
             splashSubtitle: "Interaktivní muzeum zastaralých technologií",
-            curatorNote: "Zapomenuté signály, stará média, opuštěné přístroje, uchované vzpomínky.",
-            roomAtlas: "Navigace místnostmi",
+            curatorNote: "Zapomenuté signály, osobní přístroje, magnetická média, uchovaná paměť.",
+            roomAtlas: "Místnosti",
             progressRooms: "Prozkoumané místnosti",
-            progressArtifacts: "Prohlédnuté artefakty",
+            progressArtifacts: "Prozkoumané exponáty",
             progressKnowledge: "Znalostní skóre",
             achievementUnlocked: "Archivní úspěch",
-            sceneHint: "Pohybujte se kolem exponátů pomalu. Popisky, světlo i zvuk reagují jako tichý archiv, který se právě probouzí.",
-            drawerEyebrow: "Archivní zásuvka",
-            snapshotLive: "Frontend načetl živý JSON snapshot exponátů.",
-            snapshotFallback: "Používá se záložní snapshot muzea. JSON se nepodařilo načíst.",
+            archiveNote: "Archivní poznámka",
+            sceneHint: "Pohybujte se mezi exponáty pomalu. Popisky, světlo i zvuk reagují jako tichý archiv, který se znovu zaostřuje.",
+            drawerEyebrow: "Archivní záznam",
+            snapshotLive: "Archivní záznamy načteny.",
+            snapshotFallback: "Používají se záložní archivní záznamy.",
             loading: "Připravuji expozici",
             loadingDetail: "Obnovuji místnosti, popisky a záznamy o exponátech z archivu.",
-            archiveStatus: "Atmosférický archiv",
-            archiveStatusQuiet: "Tichý vstup",
-            archiveStatusSound: "Zvuková vrstva aktivní",
+            archiveStatus: "Režim muzea",
+            archiveStatusQuiet: "Tichý režim",
+            archiveStatusSound: "Zvuk aktivní",
             memoryFragmentRestored: "Fragment paměti obnoven",
             archiveResult: "Výsledek archivu",
             archiveRestoration: "Obnova archivu"
@@ -305,18 +310,19 @@ const STRINGS = {
             category: "Kategorie",
             room: "Místnost",
             currentRoom: "Aktuální místnost",
-            openArtifact: "Otevřít detail artefaktu",
+            openArtifact: "Otevřít archivní záznam",
             jumpToRoom: "Přejít do místnosti",
-            archiveReady: "Archiv připraven",
+            archiveReady: "Režim muzea",
+            viewArchiveResult: "Zobrazit výsledek archivu",
             exploreAgain: "Prozkoumat znovu",
             restartArchive: "Restartovat archiv"
         },
         intro: {
-            eyebrow: "Kurátorský přístupový kanál",
+            eyebrow: "Kurátorský vstup",
             title: "Re:BootMuseum",
             lead: "Digitální muzeum osobních technologií, které kdysi přenášely hlasy, kazety, termíny i drobné každodenní rituály.",
             description: "Projděte pěti klidnějšími výstavními místnostmi, kde pagery čekají pod měkkým světlem, sklo CRT monitorů si stále pamatuje fosfor a magnetická média pod lampami skoro hřejí.",
-            hint: "Zvuk je volitelný a umírněný. Celé muzeum má působit hmatatelně, kompozičně čistě a jury-friendly, ne hlučně.",
+            hint: "Zvuk je volitelný a umírněný. Celé muzeum má působit hmatatelně, klidně a soustředěně, ne hlučně.",
             roomsStat: "5 místností",
             devicesStat: "10 přístrojů",
             languageStat: "CZ / EN"
@@ -379,23 +385,25 @@ const STRINGS = {
         },
         quiz: {
             eyebrow: "Znalostní zastavení",
-            title: "Archivní interakční stanice",
-            intro: "Krátká otázka navázaná na zařízení v této místnosti. Vždy jen jedna, aby expozici jemně prohloubila.",
+            title: "Interakční stanice",
+            intro: "Krátká otázka navázaná na zařízení v této místnosti. Vždy jen jedna, právě tolik, aby prohloubila návštěvu.",
             progress: "Otázky v místnosti",
             prompt: "Aktuální otázka",
             nextQuestion: "Další otázka",
             correct: "Správná odpověď",
             incorrect: "Ještě ne",
             roomComplete: "Tato místnost je hotová. Archiv si vaše odpovědi zaznamenal.",
-            achievements: "Odemčené poznámky",
+            continueHint: "Pokračujte v expozici otevřením další místnosti.",
+            continueAction: "Otevřít další místnost",
+            achievements: "Archivní úspěchy",
             answerCorrect: "Správná volba",
             answerIncorrect: "Chybná volba",
             answerAvailable: "Dostupná odpověď"
         },
         tutorial: {
             title: "Archivní tip",
-            lineOne: "Pohybujte kurzorem nad exponáty a objevujte je.",
-            lineTwo: "Kliknutím otevřete archivní záznam.",
+            lineOne: "Najeďte na exponáty nebo na ně klepněte a objevujte je.",
+            lineTwo: "Archivní záznam otevřete kliknutím nebo klepnutím.",
             dismiss: "Rozumím"
         },
         ending: {
@@ -448,11 +456,11 @@ const VISUAL_REGISTRY = {
 };
 
 const AMBIENT_PRESETS = {
-    threshold: { base: 88, companion: 132, filter: 680, noiseFilter: 980, gain: 0.034, motion: 0.03 },
-    switchboard: { base: 104, companion: 156, filter: 840, noiseFilter: 1160, gain: 0.032, motion: 0.04 },
-    transport: { base: 96, companion: 144, filter: 620, noiseFilter: 760, gain: 0.03, motion: 0.05 },
-    phosphor: { base: 124, companion: 248, filter: 920, noiseFilter: 1480, gain: 0.026, motion: 0.025 },
-    vault: { base: 76, companion: 114, filter: 520, noiseFilter: 720, gain: 0.028, motion: 0.02 }
+    threshold: { base: 88, companion: 132, filter: 680, noiseFilter: 980, gain: 0.0187, motion: 0.024 },
+    switchboard: { base: 104, companion: 156, filter: 840, noiseFilter: 1160, gain: 0.01785, motion: 0.03 },
+    transport: { base: 96, companion: 144, filter: 620, noiseFilter: 760, gain: 0.017, motion: 0.036 },
+    phosphor: { base: 124, companion: 248, filter: 920, noiseFilter: 1480, gain: 0.0153, motion: 0.02 },
+    vault: { base: 76, companion: 114, filter: 520, noiseFilter: 720, gain: 0.01615, motion: 0.016 }
 };
 
 const QUIZ_BY_ROOM = {
@@ -659,6 +667,7 @@ const ENDING_DEFINITIONS = [
 
 const dataSourceMeta = document.querySelector('meta[name="museum-data-url"]');
 const imageBaseMeta = document.querySelector('meta[name="museum-image-base-url"]');
+const audioBaseMeta = document.querySelector('meta[name="museum-audio-base-url"]');
 const embeddedDbContextNode = document.getElementById("museum-db-context");
 const initialRoom = getStoredRoom();
 const CINEMATIC_SPLASH_HOLD_MS = 3200;
@@ -672,7 +681,52 @@ const ACHIEVEMENT_TOAST_MS = 6800;
 const TUTORIAL_HINT_MS = 6800;
 const ACHIEVEMENT_EXIT_MS = 420;
 const TUTORIAL_HINT_EXIT_MS = 420;
+const FINAL_ARCHIVE_ENTER_MS = 460;
 const FINAL_ARCHIVE_EXIT_MS = 420;
+const QUIZ_ANSWER_ANIMATION_MS = 520;
+
+const AUDIO_FILE_BY_CUE = {
+    achieve: "achieve.mp3",
+    complete: "complete.mp3",
+    signal: "pager-alert.mp3",
+    ring: "telephone-ring.mp3",
+    "telephone-hum": "telephone-hum.mp3",
+    magnetic: "cassette-transport.mp3",
+    "cassette-transport": "cassette-transport.mp3",
+    "vhs-startup": "vhs-startup.mp3",
+    phosphor: "crt-static.mp3",
+    "crt-static": "crt-static.mp3",
+    printer: "printer.mp3",
+    "disk-drive": "disk-drive.mp3"
+};
+
+const AUDIO_GAIN_BY_CUE = {
+    achieve: 0.4,
+    complete: 0.44,
+    signal: 0.8,
+    ring: 0.72,
+    "telephone-hum": 0.36,
+    magnetic: 0.58,
+    "cassette-transport": 0.58,
+    "vhs-startup": 0.56,
+    phosphor: 0.38,
+    "crt-static": 0.38,
+    printer: 0.46,
+    "disk-drive": 0.42
+};
+
+const ARTIFACT_CUE_BY_SLUG = {
+    pager: "signal",
+    "old-telephone": "ring",
+    "nokia-phone": "keypad",
+    "answering-machine": "telephone-hum",
+    walkman: "cassette-transport",
+    "vhs-cassette": "vhs-startup",
+    "crt-monitor": "crt-static",
+    "dot-matrix-printer": "printer",
+    "floppy-disk": "disk-drive",
+    "tape-recorder": "magnetic"
+};
 
 const state = {
     locale: getStoredLocale(),
@@ -694,8 +748,11 @@ const state = {
     tutorialHintVisible: false,
     tutorialHintClosing: false,
     finalScreenVisible: false,
+    finalScreenEntering: false,
     finalScreenClosing: false,
     finalScreenDismissed: false,
+    finalScreenDismissedSignature: null,
+    quizAnimationKey: null,
     achievementToast: null,
     achievementToastClosing: false,
     quizProgress: createInitialQuizProgress(),
@@ -718,7 +775,9 @@ let achievementToastTimer = null;
 let achievementToastTeardownTimer = null;
 let tutorialHintTimer = null;
 let tutorialHintTeardownTimer = null;
+let finalArchiveEnterTimer = null;
 let finalArchiveTeardownTimer = null;
+let quizAnimationTimer = null;
 const achievementToastQueue = [];
 
 boot();
@@ -777,10 +836,10 @@ function handleClick(event) {
             changeRoom(button.dataset.roomId);
             break;
         case "previous-room":
-            changeRoom(getAdjacentRoom(-1));
+            changeRoom(button.dataset.roomId || getAdjacentRoom(-1));
             break;
         case "next-room":
-            changeRoom(getAdjacentRoom(1));
+            changeRoom(button.dataset.roomId || getAdjacentRoom(1));
             break;
         case "open-exhibit":
             openExhibit(button.dataset.slug, button);
@@ -799,6 +858,9 @@ function handleClick(event) {
             break;
         case "dismiss-final-screen":
             dismissFinalArchiveScreen();
+            break;
+        case "show-final-screen":
+            showFinalArchiveScreen();
             break;
         case "restart-archive":
             restartArchiveProgress();
@@ -860,11 +922,12 @@ function render() {
     const finalScreenActive = state.finalScreenVisible || state.finalScreenClosing;
 
     ROOT.innerHTML = `
-        <div class="museum-app" data-theme="${activeRoom.theme}">
+        <div class="museum-app" data-theme="${activeRoom.theme}" data-locale="${state.locale}">
             <div class="museum-vignette" aria-hidden="true"></div>
             <div class="museum-grain" aria-hidden="true"></div>
             <div class="museum-shell ${state.entered ? "" : "museum-shell--locked"} ${shellDrawerState ? "museum-shell--with-drawer" : ""} ${finalScreenActive ? "museum-shell--ending-active" : ""}" ${state.entered ? "" : 'aria-hidden="true"'}>
                 ${renderHeader(activeRoom)}
+                ${renderStickyArchiveResult()}
                 ${renderRoomStage(activeRoom, state.roomTransitionDirection)}
             </div>
             ${renderDrawer(activeExhibit, drawerIsOpen)}
@@ -930,6 +993,18 @@ function renderHeader(activeRoom) {
             </div>
             ${renderTopNavigation(activeRoom)}
         </header>
+    `;
+}
+
+function renderStickyArchiveResult() {
+    if (!isArchiveResultUnlocked()) return "";
+    return `
+        <aside class="museum-sticky-actions" aria-label="${escapeHtml(t("app.archiveResult"))}">
+            <button class="museum-archive-result-button" type="button" data-action="show-final-screen" data-cursor="interactive">
+                <span class="museum-archive-result-button__eyebrow">${escapeHtml(t("app.archiveResult"))}</span>
+                <strong>${escapeHtml(t("controls.viewArchiveResult"))}</strong>
+            </button>
+        </aside>
     `;
 }
 
@@ -1042,7 +1117,7 @@ function renderMemoryFragmentToast() {
     if (!state.memoryFragmentVisible) return "";
     return `
         <aside class="memory-fragment-toast is-visible" aria-live="polite">
-            <p class="memory-fragment-toast__eyebrow">${escapeHtml(t("app.drawerEyebrow"))}</p>
+            <p class="memory-fragment-toast__eyebrow">${escapeHtml(t("app.archiveNote"))}</p>
             <strong class="memory-fragment-toast__title">${escapeHtml(t("app.memoryFragmentRestored"))}</strong>
         </aside>
     `;
@@ -1168,10 +1243,21 @@ function renderQuizSection(activeRoom) {
     const achievements = getUnlockedAchievements().slice(0, 3);
     const roomExhibits = getRoomExhibits(roomId);
     const progressRatio = questions.length ? `${Math.max(8, Math.round((answeredCount / questions.length) * 100))}%` : "0%";
+    const canViewArchiveResult = isArchiveResultUnlocked();
+    const nextRoomId = getAdjacentRoom(1);
 
     return `
         <section class="museum-quiz" aria-labelledby="museum-quiz-title">
             <div class="museum-quiz__ambient" aria-hidden="true"></div>
+            ${canViewArchiveResult ? `
+                <div class="museum-quiz__mobile-result">
+                    <span>${escapeHtml(t("app.archiveResult"))}</span>
+                    <button class="museum-quiz__result-button museum-quiz__result-button--mobile" type="button" data-action="show-final-screen" data-cursor="interactive">
+                        <span>${escapeHtml(t("app.archiveResult"))}</span>
+                        <strong>${escapeHtml(t("controls.viewArchiveResult"))}</strong>
+                    </button>
+                </div>
+            ` : ""}
             <div class="museum-quiz__header">
                 <div class="museum-quiz__heading">
                     <p class="museum-quiz__eyebrow">${escapeHtml(t("quiz.eyebrow"))}</p>
@@ -1187,7 +1273,7 @@ function renderQuizSection(activeRoom) {
                     <div class="museum-quiz__progressbar" aria-hidden="true"><span style="width:${progressRatio}"></span></div>
                 </div>
             </div>
-            <div class="museum-quiz__card ${answerState ? (answerState.correct ? "is-correct" : "is-incorrect") : ""}">
+            <div class="museum-quiz__card ${answerState ? (answerState.correct ? "is-correct" : "is-incorrect") : ""} ${state.quizAnimationKey === `${roomId}:${question.id}` ? "is-fresh-answer" : ""}">
                 <div class="museum-quiz__question-meta">
                     <p class="museum-quiz__question-count">${String(currentIndex + 1).padStart(2, "0")} / ${String(questions.length).padStart(2, "0")}</p>
                     <p class="museum-quiz__prompt">${escapeHtml(t("quiz.prompt"))}</p>
@@ -1202,6 +1288,7 @@ function renderQuizSection(activeRoom) {
                         const answerClasses = [
                             "museum-quiz__answer",
                             isSelected ? "is-selected" : "",
+                            isAnswered && isSelected && state.quizAnimationKey === `${roomId}:${question.id}` ? "is-fresh-answer" : "",
                             isAnswered && isCorrect ? "is-correct" : "",
                             isAnswered && isSelected && !isCorrect ? "is-incorrect" : ""
                         ].filter(Boolean).join(" ");
@@ -1221,7 +1308,7 @@ function renderQuizSection(activeRoom) {
                     }).join("")}
                 </div>
                 ${answerState ? `
-                    <div class="museum-quiz__feedback ${answerState.correct ? "is-correct" : "is-incorrect"}">
+                    <div class="museum-quiz__feedback ${answerState.correct ? "is-correct" : "is-incorrect"} ${state.quizAnimationKey === `${roomId}:${question.id}` ? "is-fresh-answer" : ""}">
                         <strong class="museum-quiz__feedback-title">
                             <span class="museum-quiz__feedback-mark" aria-hidden="true">${answerState.correct ? "✓" : "!"}</span>
                             ${escapeHtml(answerState.correct ? t("quiz.correct") : t("quiz.incorrect"))}
@@ -1230,7 +1317,17 @@ function renderQuizSection(activeRoom) {
                         ${currentIndex < questions.length - 1 ? `
                             <button class="museum-quiz__next" type="button" data-action="next-question" data-room-id="${roomId}" data-cursor="interactive">${escapeHtml(t("quiz.nextQuestion"))}</button>
                         ` : `
-                            <p class="museum-quiz__complete">${escapeHtml(t("quiz.roomComplete"))}</p>
+                            <div class="museum-quiz__complete-shell">
+                                <p class="museum-quiz__complete">${escapeHtml(t("quiz.roomComplete"))}</p>
+                                ${nextRoomId ? `
+                                    <div class="museum-quiz__continue">
+                                        <p class="museum-quiz__continue-copy">${escapeHtml(t("quiz.continueHint"))}</p>
+                                        <button class="museum-quiz__next museum-quiz__next-room" type="button" data-action="next-room" data-room-id="${nextRoomId}" data-cursor="interactive">
+                                            ${escapeHtml(t("quiz.continueAction"))}
+                                        </button>
+                                    </div>
+                                ` : ""}
+                            </div>
                         `}
                     </div>
                 ` : ""}
@@ -1240,6 +1337,12 @@ function renderQuizSection(activeRoom) {
                     <span>${escapeHtml(t("app.progressKnowledge"))}</span>
                     <strong>${getCorrectQuizCount()}/${getTotalQuizQuestionCount()}</strong>
                 </div>
+                ${canViewArchiveResult ? `
+                    <button class="museum-quiz__result-button" type="button" data-action="show-final-screen" data-cursor="interactive">
+                        <span>${escapeHtml(t("app.archiveResult"))}</span>
+                        <strong>${escapeHtml(t("controls.viewArchiveResult"))}</strong>
+                    </button>
+                ` : ""}
                 ${achievements.length ? `
                     <div class="museum-quiz__achievements" aria-label="${escapeHtml(t("quiz.achievements"))}">
                         ${achievements.map((achievement) => `<span class="museum-quiz__achievement">${escapeHtml(localizeAchievementField(achievement, "title"))}</span>`).join("")}
@@ -1259,7 +1362,7 @@ function renderFinalArchiveScreen() {
     const restorationPercent = totalQuestions ? Math.round((knowledgeScore / totalQuestions) * 100) : 0;
 
     return `
-        <section class="final-archive-screen ${state.finalScreenClosing ? "is-closing" : "is-visible"}" role="dialog" aria-modal="true" aria-labelledby="final-archive-title">
+        <section class="final-archive-screen ${state.finalScreenClosing ? "is-closing" : state.finalScreenEntering ? "is-entering" : "is-open"}" role="dialog" aria-modal="true" aria-labelledby="final-archive-title">
             <div class="final-archive-screen__backdrop" aria-hidden="true"></div>
             <div class="final-archive-screen__glow" aria-hidden="true"></div>
             <div class="final-archive-screen__panel">
@@ -1304,7 +1407,6 @@ function renderRoomStage(activeRoom, transitionDirection) {
     const previousRoomId = ROOM_ORDER[activeIndex - 1] ?? null;
     const nextRoomId = ROOM_ORDER[activeIndex + 1] ?? null;
     const transitionClass = transitionDirection ? ` room-panel--transition room-panel--${transitionDirection}` : "";
-
     return `
         <section class="room-panel${transitionClass}">
             <div class="room-copy">
@@ -1324,7 +1426,7 @@ function renderRoomStage(activeRoom, transitionDirection) {
             ${renderSceneArticle(activeRoom, exhibits)}
             ${renderQuizSection(activeRoom)}
             <footer class="room-panel__footer">
-                <button class="room-nav room-nav--previous ${previousRoomId ? "" : "is-hidden"}" type="button" data-action="previous-room" data-cursor="interactive" ${previousRoomId ? "" : "disabled"}>
+                <button class="room-nav room-nav--previous ${previousRoomId ? "" : "is-hidden"}" type="button" data-action="previous-room" data-room-id="${previousRoomId ?? ""}" data-cursor="interactive" ${previousRoomId ? "" : "disabled"}>
                     <span>${escapeHtml(t("controls.previousRoom"))}</span>
                     <strong>${previousRoomId ? escapeHtml(t(ROOM_DEFINITIONS[previousRoomId].titleKey)) : ""}</strong>
                 </button>
@@ -1332,7 +1434,7 @@ function renderRoomStage(activeRoom, transitionDirection) {
                     <span>${escapeHtml(t("controls.archiveReady"))}</span>
                     <strong>${escapeHtml(state.entered ? (state.audioEnabled ? t("app.archiveStatusSound") : t("app.archiveStatusQuiet")) : t("app.archiveStatus"))}</strong>
                 </div>
-                <button class="room-nav room-nav--next ${nextRoomId ? "" : "is-hidden"}" type="button" data-action="next-room" data-cursor="interactive" ${nextRoomId ? "" : "disabled"}>
+                <button class="room-nav room-nav--next ${nextRoomId ? "" : "is-hidden"}" type="button" data-action="next-room" data-room-id="${nextRoomId ?? ""}" data-cursor="interactive" ${nextRoomId ? "" : "disabled"}>
                     <span>${escapeHtml(t("controls.nextRoom"))}</span>
                     <strong>${nextRoomId ? escapeHtml(t(ROOM_DEFINITIONS[nextRoomId].titleKey)) : ""}</strong>
                 </button>
@@ -1488,18 +1590,32 @@ function getTotalQuizQuestionCount() {
     return Object.values(QUIZ_BY_ROOM).reduce((total, questions) => total + questions.length, 0);
 }
 
+function getFinalRoomId() {
+    return ROOM_ORDER[ROOM_ORDER.length - 1];
+}
+
+function isFinalRoomQuizCompleted() {
+    const finalRoomId = getFinalRoomId();
+    const finalRoomQuestions = QUIZ_BY_ROOM[finalRoomId] ?? [];
+    if (!finalRoomQuestions.length) return true;
+    return getRoomAnsweredCount(finalRoomId) >= finalRoomQuestions.length;
+}
+
+function isArchiveResultUnlocked() {
+    return state.entered && state.visitedRooms.size >= ROOM_ORDER.length && isFinalRoomQuizCompleted();
+}
+
 function isMuseumCompleted() {
-    const totalQuestions = getTotalQuizQuestionCount();
-    return (
-        totalQuestions > 0 &&
-        state.visitedRooms.size >= ROOM_ORDER.length &&
-        getAnsweredQuizCount() >= totalQuestions
-    );
+    return state.entered && state.visitedRooms.size >= ROOM_ORDER.length && getAnsweredQuizCount() >= getTotalQuizQuestionCount();
 }
 
 function getFinalArchiveEnding() {
     const score = getCorrectQuizCount();
     return ENDING_DEFINITIONS.find((ending) => score >= ending.minScore && score <= ending.maxScore) ?? ENDING_DEFINITIONS[0];
+}
+
+function getFinalArchiveProgressSignature() {
+    return `${state.visitedRooms.size}:${getAnsweredQuizCount()}:${getCorrectQuizCount()}`;
 }
 
 function getUnlockedAchievements() {
@@ -1597,7 +1713,7 @@ function openExhibit(slug, trigger) {
     state.drawerClosing = false;
     state.drawerEntering = shouldAnimateOpen;
     state.viewedArtifacts.add(exhibit.slug);
-    if (state.entered && state.audioEnabled) audio.playCue(exhibit.soundKey, 0.82);
+    if (state.entered && state.audioEnabled) audio.playCue(getExhibitCueKey(exhibit), 0.82);
     evaluateAchievements();
     render();
 
@@ -1636,7 +1752,7 @@ function closeModal() {
 
 function replaySelectedCue() {
     const exhibit = getSelectedExhibit();
-    if (exhibit) audio.playCue(exhibit.soundKey, 0.92);
+    if (exhibit) audio.playCue(getExhibitCueKey(exhibit), 0.92);
 }
 
 function answerQuiz(roomId, questionId, answerIndex) {
@@ -1648,10 +1764,17 @@ function answerQuiz(roomId, questionId, answerIndex) {
     if (roomState.answers[questionId]) return;
 
     const correct = answerIndex === question.correctIndex;
+    const answeredBefore = getRoomAnsweredCount(roomId);
     roomState.answers[questionId] = { selectedIndex: answerIndex, correct };
+    triggerQuizAnswerAnimation(roomId, questionId);
 
     if (state.entered && state.audioEnabled) {
-        audio.playCue(correct ? "transition" : "signal", correct ? 0.54 : 0.4);
+        playQuizAnswerCue(correct);
+        if (answeredBefore + 1 >= questions.length) {
+            window.setTimeout(() => {
+                if (state.entered && state.audioEnabled) audio.playCue("complete", 0.62);
+            }, prefersReducedMotion() ? 0 : 180);
+        }
     }
 
     evaluateAchievements();
@@ -1664,6 +1787,9 @@ function advanceQuiz(roomId) {
     if (!questions.length) return;
     const roomState = getRoomQuizState(roomId);
     roomState.currentIndex = Math.min(roomState.currentIndex + 1, questions.length - 1);
+    if (state.entered && state.audioEnabled) {
+        audio.playCue("page", 0.28);
+    }
     render();
 }
 
@@ -1695,28 +1821,44 @@ function clearDrawerImmediately() {
 
 function syncFinalArchiveState() {
     if (!isMuseumCompleted()) {
+        cancelFinalArchiveEnter();
         state.finalScreenVisible = false;
+        state.finalScreenEntering = false;
         state.finalScreenClosing = false;
         state.finalScreenDismissed = false;
+        state.finalScreenDismissedSignature = null;
         cancelFinalArchiveTeardown();
         return;
     }
 
-    if (state.finalScreenVisible || state.finalScreenClosing || state.finalScreenDismissed) {
+    const signature = getFinalArchiveProgressSignature();
+
+    if (state.finalScreenVisible || state.finalScreenClosing) {
+        return;
+    }
+
+    if (state.finalScreenDismissed && state.finalScreenDismissedSignature === signature) {
         return;
     }
 
     clearDrawerImmediately();
     state.finalScreenVisible = true;
+    state.finalScreenEntering = !prefersReducedMotion();
     state.finalScreenClosing = false;
+    state.finalScreenDismissed = false;
+    state.finalScreenDismissedSignature = signature;
+    scheduleFinalArchiveEnter();
 }
 
 function dismissFinalArchiveScreen() {
     if (!state.finalScreenVisible) return;
+    cancelFinalArchiveEnter();
     cancelFinalArchiveTeardown();
     state.finalScreenVisible = false;
+    state.finalScreenEntering = false;
     state.finalScreenClosing = true;
     state.finalScreenDismissed = true;
+    state.finalScreenDismissedSignature = getFinalArchiveProgressSignature();
     render();
     finalArchiveTeardownTimer = window.setTimeout(() => {
         state.finalScreenClosing = false;
@@ -1725,12 +1867,27 @@ function dismissFinalArchiveScreen() {
     }, FINAL_ARCHIVE_EXIT_MS);
 }
 
+function showFinalArchiveScreen() {
+    if (!isArchiveResultUnlocked()) return;
+    cancelFinalArchiveEnter();
+    cancelFinalArchiveTeardown();
+    clearDrawerImmediately();
+    state.finalScreenDismissed = false;
+    state.finalScreenEntering = !prefersReducedMotion();
+    state.finalScreenClosing = false;
+    state.finalScreenVisible = true;
+    scheduleFinalArchiveEnter();
+    render();
+}
+
 function restartArchiveProgress() {
+    cancelFinalArchiveEnter();
     cancelFinalArchiveTeardown();
     cancelAchievementToast();
     cancelAchievementTeardown();
     cancelTutorialHintDismiss();
     cancelTutorialHintTeardown();
+    cancelQuizAnswerAnimation();
     clearDrawerImmediately();
     clearMemoryFragmentImmediately();
     achievementToastQueue.length = 0;
@@ -1742,8 +1899,11 @@ function restartArchiveProgress() {
     state.viewedArtifacts = new Set();
     state.roomTransitionDirection = null;
     state.finalScreenVisible = false;
+    state.finalScreenEntering = false;
     state.finalScreenClosing = false;
     state.finalScreenDismissed = false;
+    state.finalScreenDismissedSignature = null;
+    state.quizAnimationKey = null;
     state.achievementToast = null;
     state.achievementToastClosing = false;
     state.tutorialHintVisible = false;
@@ -1752,6 +1912,25 @@ function restartArchiveProgress() {
     persistRoom();
     if (state.entered && state.audioEnabled) audio.playCue("transition", 0.68);
     render();
+}
+
+function scheduleFinalArchiveEnter() {
+    if (prefersReducedMotion()) {
+        state.finalScreenEntering = false;
+        return;
+    }
+    cancelFinalArchiveEnter();
+    finalArchiveEnterTimer = window.setTimeout(() => {
+        state.finalScreenEntering = false;
+        finalArchiveEnterTimer = null;
+        render();
+    }, FINAL_ARCHIVE_ENTER_MS);
+}
+
+function cancelFinalArchiveEnter() {
+    if (!finalArchiveEnterTimer) return;
+    window.clearTimeout(finalArchiveEnterTimer);
+    finalArchiveEnterTimer = null;
 }
 
 function shouldShowCinematicSplash() {
@@ -1913,6 +2092,33 @@ function clearMemoryFragmentImmediately() {
     state.crtSequenceCount = 0;
 }
 
+function triggerQuizAnswerAnimation(roomId, questionId) {
+    cancelQuizAnswerAnimation();
+    state.quizAnimationKey = `${roomId}:${questionId}`;
+    quizAnimationTimer = window.setTimeout(() => {
+        state.quizAnimationKey = null;
+        quizAnimationTimer = null;
+        render();
+    }, prefersReducedMotion() ? 0 : QUIZ_ANSWER_ANIMATION_MS);
+}
+
+function cancelQuizAnswerAnimation() {
+    if (quizAnimationTimer) {
+        window.clearTimeout(quizAnimationTimer);
+        quizAnimationTimer = null;
+    }
+    state.quizAnimationKey = null;
+}
+
+function playQuizAnswerCue(correct) {
+    if (correct) {
+        audio.playCue("affirm", 0.54);
+        return;
+    }
+
+    audio.playCue("soft-error", 0.34);
+}
+
 function evaluateAchievements() {
     const unlockedNow = ACHIEVEMENT_DEFINITIONS.filter((achievement) => {
         if (state.unlockedAchievements.has(achievement.id)) return false;
@@ -1939,6 +2145,9 @@ function showNextAchievementToast() {
     cancelAchievementTeardown();
     state.achievementToast = nextAchievement;
     state.achievementToastClosing = false;
+    if (state.entered && state.audioEnabled) {
+        audio.playCue("achieve", 0.56);
+    }
     render();
 
     achievementToastTimer = window.setTimeout(() => {
@@ -2118,13 +2327,30 @@ function escapeAttribute(value) {
     return escapeHtml(value);
 }
 
+function resolveAudioBaseUrl() {
+    const base = audioBaseMeta?.content?.trim();
+    if (base) return base.endsWith("/") ? base : `${base}/`;
+    return "assets/audio/";
+}
+
+function resolveAudioUrl(fileName) {
+    return `${resolveAudioBaseUrl()}${fileName}`;
+}
+
+function getExhibitCueKey(exhibit) {
+    return ARTIFACT_CUE_BY_SLUG[exhibit.slug] ?? exhibit.soundKey ?? "transition";
+}
+
 function createAudioManager(initialEnabled) {
     let enabled = initialEnabled;
-    let supported = typeof getAudioContextConstructor() === "function";
+    const sampleSupported = typeof Audio === "function";
+    let supported = sampleSupported || typeof getAudioContextConstructor() === "function";
     let context = null;
     let noiseBuffer = null;
     let ambientNodes = null;
     let ambientKey = null;
+    const sampleCache = new Map();
+    const activeSamplePlayers = new Set();
 
     function ensureContext() {
         const AudioContextConstructor = getAudioContextConstructor();
@@ -2150,20 +2376,83 @@ function createAudioManager(initialEnabled) {
         enabled = desiredState;
         if (!desiredState) {
             stopAmbient();
+            stopActiveSamples();
             if (context && context.state === "running") await context.suspend();
             return false;
         }
         const audioContext = ensureContext();
-        if (!audioContext) {
+        if (!audioContext && !sampleSupported) {
             enabled = false;
             return false;
         }
-        if (audioContext.state === "suspended") await audioContext.resume();
+        if (audioContext && audioContext.state === "suspended") await audioContext.resume();
+        return true;
+    }
+
+    function stopActiveSamples() {
+        activeSamplePlayers.forEach((player) => {
+            try {
+                player.pause();
+                player.currentTime = 0;
+            } catch (error) {
+                void error;
+            }
+        });
+        activeSamplePlayers.clear();
+    }
+
+    function playSampleCue(key, volume = 1) {
+        if (!sampleSupported) return false;
+        const fileName = AUDIO_FILE_BY_CUE[key];
+        if (!fileName) return false;
+
+        let prototype = sampleCache.get(fileName);
+        if (!prototype) {
+            prototype = new Audio(resolveAudioUrl(fileName));
+            prototype.preload = "auto";
+            sampleCache.set(fileName, prototype);
+        }
+
+        const player = prototype.cloneNode();
+        const gain = AUDIO_GAIN_BY_CUE[key] ?? 1;
+        const targetVolume = Math.max(0, Math.min(1, volume * gain));
+        player.volume = targetVolume;
+        player.currentTime = 0;
+        const cleanup = () => {
+            if (player._museumFadeTimeout) window.clearTimeout(player._museumFadeTimeout);
+            if (player._museumFadeInterval) window.clearInterval(player._museumFadeInterval);
+            activeSamplePlayers.delete(player);
+        };
+        player.addEventListener("ended", cleanup, { once: true });
+        player.addEventListener("pause", () => {
+            if (player.ended || player.currentTime === 0) cleanup();
+        }, { once: true });
+        activeSamplePlayers.add(player);
+        void player.play().catch(() => {
+            cleanup();
+        });
+        player._museumFadeTimeout = window.setTimeout(() => {
+            const fadeDuration = 900;
+            const fadeSteps = 9;
+            const fadeStepMs = Math.round(fadeDuration / fadeSteps);
+            let remainingSteps = fadeSteps;
+            player._museumFadeInterval = window.setInterval(() => {
+                remainingSteps -= 1;
+                player.volume = Math.max(0, targetVolume * (remainingSteps / fadeSteps));
+                if (remainingSteps <= 0) {
+                    window.clearInterval(player._museumFadeInterval);
+                    player.pause();
+                    player.currentTime = 0;
+                    cleanup();
+                }
+            }, fadeStepMs);
+        }, 3000);
         return true;
     }
 
     function playCue(key, volume = 1) {
         if (!enabled) return;
+        if (playSampleCue(key, volume)) return;
         const audioContext = ensureContext();
         if (!audioContext || audioContext.state !== "running") return;
 
@@ -2184,6 +2473,19 @@ function createAudioManager(initialEnabled) {
         };
 
         switch (key) {
+            case "affirm":
+                createOscillator("triangle", 392, startTime + 0.18);
+                createOscillator("sine", 523.25, startTime + 0.18);
+                createOscillator("sine", 659.25, startTime + 0.12);
+                break;
+            case "soft-error":
+                createOscillator("triangle", 233.08, startTime + 0.16);
+                createOscillator("sine", 196, startTime + 0.18);
+                break;
+            case "page":
+                createOscillator("sine", 293.66, startTime + 0.16);
+                createOscillator("triangle", 440, startTime + 0.14);
+                break;
             case "signal":
                 createOscillator("sine", 842, startTime + 0.18);
                 createOscillator("triangle", 1264, startTime + 0.14);
