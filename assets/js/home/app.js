@@ -456,11 +456,11 @@ const VISUAL_REGISTRY = {
 };
 
 const AMBIENT_PRESETS = {
-    threshold: { base: 88, companion: 132, filter: 680, noiseFilter: 980, gain: 0.022, motion: 0.024 },
-    switchboard: { base: 104, companion: 156, filter: 840, noiseFilter: 1160, gain: 0.021, motion: 0.03 },
-    transport: { base: 96, companion: 144, filter: 620, noiseFilter: 760, gain: 0.02, motion: 0.036 },
-    phosphor: { base: 124, companion: 248, filter: 920, noiseFilter: 1480, gain: 0.018, motion: 0.02 },
-    vault: { base: 76, companion: 114, filter: 520, noiseFilter: 720, gain: 0.019, motion: 0.016 }
+    threshold: { base: 88, companion: 132, filter: 680, noiseFilter: 980, gain: 0.0187, motion: 0.024 },
+    switchboard: { base: 104, companion: 156, filter: 840, noiseFilter: 1160, gain: 0.01785, motion: 0.03 },
+    transport: { base: 96, companion: 144, filter: 620, noiseFilter: 760, gain: 0.017, motion: 0.036 },
+    phosphor: { base: 124, companion: 248, filter: 920, noiseFilter: 1480, gain: 0.0153, motion: 0.02 },
+    vault: { base: 76, companion: 114, filter: 520, noiseFilter: 720, gain: 0.01615, motion: 0.016 }
 };
 
 const QUIZ_BY_ROOM = {
@@ -667,6 +667,7 @@ const ENDING_DEFINITIONS = [
 
 const dataSourceMeta = document.querySelector('meta[name="museum-data-url"]');
 const imageBaseMeta = document.querySelector('meta[name="museum-image-base-url"]');
+const audioBaseMeta = document.querySelector('meta[name="museum-audio-base-url"]');
 const embeddedDbContextNode = document.getElementById("museum-db-context");
 const initialRoom = getStoredRoom();
 const CINEMATIC_SPLASH_HOLD_MS = 3200;
@@ -683,6 +684,45 @@ const TUTORIAL_HINT_EXIT_MS = 420;
 const FINAL_ARCHIVE_ENTER_MS = 460;
 const FINAL_ARCHIVE_EXIT_MS = 420;
 const QUIZ_ANSWER_ANIMATION_MS = 520;
+
+const AUDIO_FILE_BY_CUE = {
+    signal: "pager-alert.mp3",
+    ring: "telephone-ring.mp3",
+    "telephone-hum": "telephone-hum.mp3",
+    magnetic: "cassette-transport.mp3",
+    "cassette-transport": "cassette-transport.mp3",
+    "vhs-startup": "vhs-startup.mp3",
+    phosphor: "crt-static.mp3",
+    "crt-static": "crt-static.mp3",
+    printer: "disk-drive.mp3",
+    "disk-drive": "disk-drive.mp3"
+};
+
+const AUDIO_GAIN_BY_CUE = {
+    signal: 0.8,
+    ring: 0.72,
+    "telephone-hum": 0.36,
+    magnetic: 0.58,
+    "cassette-transport": 0.58,
+    "vhs-startup": 0.56,
+    phosphor: 0.38,
+    "crt-static": 0.38,
+    printer: 0.42,
+    "disk-drive": 0.42
+};
+
+const ARTIFACT_CUE_BY_SLUG = {
+    pager: "signal",
+    "old-telephone": "ring",
+    "nokia-phone": "keypad",
+    "answering-machine": "telephone-hum",
+    walkman: "cassette-transport",
+    "vhs-cassette": "vhs-startup",
+    "crt-monitor": "crt-static",
+    "dot-matrix-printer": "printer",
+    "floppy-disk": "disk-drive",
+    "tape-recorder": "magnetic"
+};
 
 const state = {
     locale: getStoredLocale(),
@@ -1669,7 +1709,7 @@ function openExhibit(slug, trigger) {
     state.drawerClosing = false;
     state.drawerEntering = shouldAnimateOpen;
     state.viewedArtifacts.add(exhibit.slug);
-    if (state.entered && state.audioEnabled) audio.playCue(exhibit.soundKey, 0.82);
+    if (state.entered && state.audioEnabled) audio.playCue(getExhibitCueKey(exhibit), 0.82);
     evaluateAchievements();
     render();
 
@@ -1708,7 +1748,7 @@ function closeModal() {
 
 function replaySelectedCue() {
     const exhibit = getSelectedExhibit();
-    if (exhibit) audio.playCue(exhibit.soundKey, 0.92);
+    if (exhibit) audio.playCue(getExhibitCueKey(exhibit), 0.92);
 }
 
 function answerQuiz(roomId, questionId, answerIndex) {
@@ -2063,16 +2103,10 @@ function cancelQuizAnswerAnimation() {
 function playQuizAnswerCue(correct) {
     if (correct) {
         audio.playCue("affirm", 0.54);
-        window.setTimeout(() => {
-            if (state.audioEnabled) audio.playCue("phosphor", 0.08);
-        }, 96);
         return;
     }
 
     audio.playCue("soft-error", 0.34);
-    window.setTimeout(() => {
-        if (state.audioEnabled) audio.playCue("mechanical", 0.06);
-    }, 72);
 }
 
 function evaluateAchievements() {
@@ -2280,13 +2314,30 @@ function escapeAttribute(value) {
     return escapeHtml(value);
 }
 
+function resolveAudioBaseUrl() {
+    const base = audioBaseMeta?.content?.trim();
+    if (base) return base.endsWith("/") ? base : `${base}/`;
+    return "assets/audio/";
+}
+
+function resolveAudioUrl(fileName) {
+    return `${resolveAudioBaseUrl()}${fileName}`;
+}
+
+function getExhibitCueKey(exhibit) {
+    return ARTIFACT_CUE_BY_SLUG[exhibit.slug] ?? exhibit.soundKey ?? "transition";
+}
+
 function createAudioManager(initialEnabled) {
     let enabled = initialEnabled;
-    let supported = typeof getAudioContextConstructor() === "function";
+    const sampleSupported = typeof Audio === "function";
+    let supported = sampleSupported || typeof getAudioContextConstructor() === "function";
     let context = null;
     let noiseBuffer = null;
     let ambientNodes = null;
     let ambientKey = null;
+    const sampleCache = new Map();
+    const activeSamplePlayers = new Set();
 
     function ensureContext() {
         const AudioContextConstructor = getAudioContextConstructor();
@@ -2312,20 +2363,83 @@ function createAudioManager(initialEnabled) {
         enabled = desiredState;
         if (!desiredState) {
             stopAmbient();
+            stopActiveSamples();
             if (context && context.state === "running") await context.suspend();
             return false;
         }
         const audioContext = ensureContext();
-        if (!audioContext) {
+        if (!audioContext && !sampleSupported) {
             enabled = false;
             return false;
         }
-        if (audioContext.state === "suspended") await audioContext.resume();
+        if (audioContext && audioContext.state === "suspended") await audioContext.resume();
+        return true;
+    }
+
+    function stopActiveSamples() {
+        activeSamplePlayers.forEach((player) => {
+            try {
+                player.pause();
+                player.currentTime = 0;
+            } catch (error) {
+                void error;
+            }
+        });
+        activeSamplePlayers.clear();
+    }
+
+    function playSampleCue(key, volume = 1) {
+        if (!sampleSupported) return false;
+        const fileName = AUDIO_FILE_BY_CUE[key];
+        if (!fileName) return false;
+
+        let prototype = sampleCache.get(fileName);
+        if (!prototype) {
+            prototype = new Audio(resolveAudioUrl(fileName));
+            prototype.preload = "auto";
+            sampleCache.set(fileName, prototype);
+        }
+
+        const player = prototype.cloneNode();
+        const gain = AUDIO_GAIN_BY_CUE[key] ?? 1;
+        const targetVolume = Math.max(0, Math.min(1, volume * gain));
+        player.volume = targetVolume;
+        player.currentTime = 0;
+        const cleanup = () => {
+            if (player._museumFadeTimeout) window.clearTimeout(player._museumFadeTimeout);
+            if (player._museumFadeInterval) window.clearInterval(player._museumFadeInterval);
+            activeSamplePlayers.delete(player);
+        };
+        player.addEventListener("ended", cleanup, { once: true });
+        player.addEventListener("pause", () => {
+            if (player.ended || player.currentTime === 0) cleanup();
+        }, { once: true });
+        activeSamplePlayers.add(player);
+        void player.play().catch(() => {
+            cleanup();
+        });
+        player._museumFadeTimeout = window.setTimeout(() => {
+            const fadeDuration = 900;
+            const fadeSteps = 9;
+            const fadeStepMs = Math.round(fadeDuration / fadeSteps);
+            let remainingSteps = fadeSteps;
+            player._museumFadeInterval = window.setInterval(() => {
+                remainingSteps -= 1;
+                player.volume = Math.max(0, targetVolume * (remainingSteps / fadeSteps));
+                if (remainingSteps <= 0) {
+                    window.clearInterval(player._museumFadeInterval);
+                    player.pause();
+                    player.currentTime = 0;
+                    cleanup();
+                }
+            }, fadeStepMs);
+        }, 3000);
         return true;
     }
 
     function playCue(key, volume = 1) {
         if (!enabled) return;
+        if (playSampleCue(key, volume)) return;
         const audioContext = ensureContext();
         if (!audioContext || audioContext.state !== "running") return;
 
