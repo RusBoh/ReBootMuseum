@@ -308,12 +308,13 @@ svg {
 }
 
 .museum-toolbar__stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(10.75rem, 100%), 1fr));
 }
 
 .museum-toolbar__room,
 .museum-stat {
-    padding: 0.78rem 0.86rem;
+    min-width: 0;
+    padding: 0.92rem 1rem;
     border-radius: 1.15rem;
     background: rgba(255, 248, 237, 0.025);
     border: 1px solid rgba(255, 239, 213, 0.06);
@@ -333,6 +334,31 @@ svg {
 .room-panel__status span,
 .artifact-drawer__meta-card span {
     display: block;
+    padding-inline-end: 0.1rem;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+}
+
+.museum-toolbar__room strong,
+.museum-stat strong {
+    padding-inline-end: 0.1rem;
+    overflow-wrap: anywhere;
+}
+
+.museum-app[data-locale="cs"] .museum-toolbar__stats {
+    grid-template-columns: repeat(auto-fit, minmax(min(11.4rem, 100%), 1fr));
+}
+
+.museum-app[data-locale="cs"] .museum-toolbar__room span,
+.museum-app[data-locale="cs"] .museum-stat span {
+    font-size: 0.67rem;
+    letter-spacing: 0.16em;
+    line-height: 1.32;
+}
+
+.museum-app[data-locale="cs"] .museum-toolbar__room,
+.museum-app[data-locale="cs"] .museum-stat {
+    padding: 0.88rem 0.94rem;
 }
 
 .museum-toolbar__note {
@@ -3217,6 +3243,11 @@ button:focus-visible {
         grid-template-columns: 1fr;
     }
 
+    .museum-toolbar__room,
+    .museum-stat {
+        padding: 0.9rem 0.96rem;
+    }
+
     .museum-quiz {
         padding: 0.9rem;
         border-radius: 1.35rem;
@@ -3447,6 +3478,10 @@ button:focus-visible {
 
     .museum-archive-result-button {
         min-width: 12.75rem;
+    }
+
+    .museum-app[data-locale="cs"] .museum-toolbar__stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 

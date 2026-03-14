@@ -116,24 +116,25 @@ const STRINGS = {
         app: {
             documentTitle: "Museum of Forgotten Signals",
             title: "Museum of Forgotten Signals",
-            subtitle: "Interactive Museum / Interaktivní muzeum",
+            subtitle: "A digital museum of forgotten personal technologies",
             splashTitle: "Archive of Forgotten Signals",
             splashSubtitle: "Interactive Museum of Obsolete Technology",
-            curatorNote: "Forgotten signals, old media, abandoned devices, preserved memories.",
-            roomAtlas: "Room navigation",
+            curatorNote: "Forgotten signals, personal devices, magnetic media, preserved memory.",
+            roomAtlas: "Rooms",
             progressRooms: "Rooms explored",
-            progressArtifacts: "Artifacts inspected",
+            progressArtifacts: "Artifacts explored",
             progressKnowledge: "Knowledge score",
             achievementUnlocked: "Archive achievement",
-            sceneHint: "Move around the exhibits slowly. Labels, light, and sound behave like a quiet archive waking up.",
-            drawerEyebrow: "Archive drawer",
-            snapshotLive: "Live frontend snapshot loaded from JSON.",
-            snapshotFallback: "Fallback museum snapshot in use. JSON could not be loaded.",
+            archiveNote: "Archive note",
+            sceneHint: "Move among the artifacts slowly. Labels, light, and sound respond like a quiet archive coming back into focus.",
+            drawerEyebrow: "Archive entry",
+            snapshotLive: "Archive records loaded.",
+            snapshotFallback: "Fallback archive records in use.",
             loading: "Preparing the exhibition",
             loadingDetail: "Restoring rooms, labels, and object records from the archive.",
-            archiveStatus: "Atmospheric archive",
-            archiveStatusQuiet: "Quiet entry",
-            archiveStatusSound: "Sound layer active",
+            archiveStatus: "Museum mode",
+            archiveStatusQuiet: "Quiet mode",
+            archiveStatusSound: "Sound enabled",
             memoryFragmentRestored: "Memory fragment restored",
             archiveResult: "Archive result",
             archiveRestoration: "Archive restoration"
@@ -156,19 +157,19 @@ const STRINGS = {
             category: "Category",
             room: "Room",
             currentRoom: "Current room",
-            openArtifact: "Open artifact details",
+            openArtifact: "Open archive entry",
             jumpToRoom: "Jump to room",
-            archiveReady: "Archive ready",
+            archiveReady: "Museum mode",
             viewArchiveResult: "View archive result",
             exploreAgain: "Explore again",
             restartArchive: "Restart archive"
         },
         intro: {
-            eyebrow: "Curated access channel",
+            eyebrow: "Curated entry",
             title: "Re:BootMuseum",
             lead: "A digital museum of personal technologies that once carried voices, tapes, deadlines, and private rituals.",
             description: "Walk through five calmer exhibition rooms where pagers wait under low light, CRT glass still remembers phosphor glow, and magnetic media feels almost warm beneath the lamps.",
-            hint: "Sound is optional and restrained. The museum is meant to feel tactile, composed, and jury-friendly rather than noisy.",
+            hint: "Sound is optional and restrained. The museum is meant to feel tactile, calm, and deliberate rather than noisy.",
             roomsStat: "5 rooms",
             devicesStat: "10 devices",
             languageStat: "CZ / EN"
@@ -231,8 +232,8 @@ const STRINGS = {
         },
         quiz: {
             eyebrow: "Knowledge checkpoint",
-            title: "Archive interaction station",
-            intro: "A short prompt tied to the devices in this room. One question at a time, just enough to deepen the exhibit.",
+            title: "Interaction station",
+            intro: "A short prompt tied to the devices in this room. One at a time, just enough to deepen the visit.",
             progress: "Room questions",
             prompt: "Current prompt",
             nextQuestion: "Next question",
@@ -241,15 +242,15 @@ const STRINGS = {
             roomComplete: "This room is complete. The archive has logged your answers.",
             continueHint: "Continue the exhibition by opening the next room.",
             continueAction: "Open next room",
-            achievements: "Unlocked notes",
+            achievements: "Archive achievements",
             answerCorrect: "Correct choice",
             answerIncorrect: "Incorrect choice",
             answerAvailable: "Available answer"
         },
         tutorial: {
             title: "Archive hint",
-            lineOne: "Move the cursor over artifacts to explore them.",
-            lineTwo: "Click to open archive entries.",
+            lineOne: "Hover over artifacts or tap them to explore.",
+            lineTwo: "Open each archive entry with a click or tap.",
             dismiss: "Understood"
         },
         ending: {
@@ -268,24 +269,25 @@ const STRINGS = {
         app: {
             documentTitle: "Muzeum zapomenutých signálů",
             title: "Muzeum zapomenutých signálů",
-            subtitle: "Interactive Museum / Interaktivní muzeum",
+            subtitle: "Digitální muzeum zapomenutých osobních technologií",
             splashTitle: "Archiv zapomenutých signálů",
             splashSubtitle: "Interaktivní muzeum zastaralých technologií",
-            curatorNote: "Zapomenuté signály, stará média, opuštěné přístroje, uchované vzpomínky.",
-            roomAtlas: "Navigace místnostmi",
+            curatorNote: "Zapomenuté signály, osobní přístroje, magnetická média, uchovaná paměť.",
+            roomAtlas: "Místnosti",
             progressRooms: "Prozkoumané místnosti",
-            progressArtifacts: "Prohlédnuté artefakty",
+            progressArtifacts: "Prozkoumané exponáty",
             progressKnowledge: "Znalostní skóre",
             achievementUnlocked: "Archivní úspěch",
-            sceneHint: "Pohybujte se kolem exponátů pomalu. Popisky, světlo i zvuk reagují jako tichý archiv, který se právě probouzí.",
-            drawerEyebrow: "Archivní zásuvka",
-            snapshotLive: "Frontend načetl živý JSON snapshot exponátů.",
-            snapshotFallback: "Používá se záložní snapshot muzea. JSON se nepodařilo načíst.",
+            archiveNote: "Archivní poznámka",
+            sceneHint: "Pohybujte se mezi exponáty pomalu. Popisky, světlo i zvuk reagují jako tichý archiv, který se znovu zaostřuje.",
+            drawerEyebrow: "Archivní záznam",
+            snapshotLive: "Archivní záznamy načteny.",
+            snapshotFallback: "Používají se záložní archivní záznamy.",
             loading: "Připravuji expozici",
             loadingDetail: "Obnovuji místnosti, popisky a záznamy o exponátech z archivu.",
-            archiveStatus: "Atmosférický archiv",
-            archiveStatusQuiet: "Tichý vstup",
-            archiveStatusSound: "Zvuková vrstva aktivní",
+            archiveStatus: "Režim muzea",
+            archiveStatusQuiet: "Tichý režim",
+            archiveStatusSound: "Zvuk aktivní",
             memoryFragmentRestored: "Fragment paměti obnoven",
             archiveResult: "Výsledek archivu",
             archiveRestoration: "Obnova archivu"
@@ -308,19 +310,19 @@ const STRINGS = {
             category: "Kategorie",
             room: "Místnost",
             currentRoom: "Aktuální místnost",
-            openArtifact: "Otevřít detail artefaktu",
+            openArtifact: "Otevřít archivní záznam",
             jumpToRoom: "Přejít do místnosti",
-            archiveReady: "Archiv připraven",
+            archiveReady: "Režim muzea",
             viewArchiveResult: "Zobrazit výsledek archivu",
             exploreAgain: "Prozkoumat znovu",
             restartArchive: "Restartovat archiv"
         },
         intro: {
-            eyebrow: "Kurátorský přístupový kanál",
+            eyebrow: "Kurátorský vstup",
             title: "Re:BootMuseum",
             lead: "Digitální muzeum osobních technologií, které kdysi přenášely hlasy, kazety, termíny i drobné každodenní rituály.",
             description: "Projděte pěti klidnějšími výstavními místnostmi, kde pagery čekají pod měkkým světlem, sklo CRT monitorů si stále pamatuje fosfor a magnetická média pod lampami skoro hřejí.",
-            hint: "Zvuk je volitelný a umírněný. Celé muzeum má působit hmatatelně, kompozičně čistě a jury-friendly, ne hlučně.",
+            hint: "Zvuk je volitelný a umírněný. Celé muzeum má působit hmatatelně, klidně a soustředěně, ne hlučně.",
             roomsStat: "5 místností",
             devicesStat: "10 přístrojů",
             languageStat: "CZ / EN"
@@ -383,8 +385,8 @@ const STRINGS = {
         },
         quiz: {
             eyebrow: "Znalostní zastavení",
-            title: "Archivní interakční stanice",
-            intro: "Krátká otázka navázaná na zařízení v této místnosti. Vždy jen jedna, aby expozici jemně prohloubila.",
+            title: "Interakční stanice",
+            intro: "Krátká otázka navázaná na zařízení v této místnosti. Vždy jen jedna, právě tolik, aby prohloubila návštěvu.",
             progress: "Otázky v místnosti",
             prompt: "Aktuální otázka",
             nextQuestion: "Další otázka",
@@ -393,15 +395,15 @@ const STRINGS = {
             roomComplete: "Tato místnost je hotová. Archiv si vaše odpovědi zaznamenal.",
             continueHint: "Pokračujte v expozici otevřením další místnosti.",
             continueAction: "Otevřít další místnost",
-            achievements: "Odemčené poznámky",
+            achievements: "Archivní úspěchy",
             answerCorrect: "Správná volba",
             answerIncorrect: "Chybná volba",
             answerAvailable: "Dostupná odpověď"
         },
         tutorial: {
             title: "Archivní tip",
-            lineOne: "Pohybujte kurzorem nad exponáty a objevujte je.",
-            lineTwo: "Kliknutím otevřete archivní záznam.",
+            lineOne: "Najeďte na exponáty nebo na ně klepněte a objevujte je.",
+            lineTwo: "Archivní záznam otevřete kliknutím nebo klepnutím.",
             dismiss: "Rozumím"
         },
         ending: {
@@ -876,7 +878,7 @@ function render() {
     const finalScreenActive = state.finalScreenVisible || state.finalScreenClosing;
 
     ROOT.innerHTML = `
-        <div class="museum-app" data-theme="${activeRoom.theme}">
+        <div class="museum-app" data-theme="${activeRoom.theme}" data-locale="${state.locale}">
             <div class="museum-vignette" aria-hidden="true"></div>
             <div class="museum-grain" aria-hidden="true"></div>
             <div class="museum-shell ${state.entered ? "" : "museum-shell--locked"} ${shellDrawerState ? "museum-shell--with-drawer" : ""} ${finalScreenActive ? "museum-shell--ending-active" : ""}" ${state.entered ? "" : 'aria-hidden="true"'}>
@@ -1071,7 +1073,7 @@ function renderMemoryFragmentToast() {
     if (!state.memoryFragmentVisible) return "";
     return `
         <aside class="memory-fragment-toast is-visible" aria-live="polite">
-            <p class="memory-fragment-toast__eyebrow">${escapeHtml(t("app.drawerEyebrow"))}</p>
+            <p class="memory-fragment-toast__eyebrow">${escapeHtml(t("app.archiveNote"))}</p>
             <strong class="memory-fragment-toast__title">${escapeHtml(t("app.memoryFragmentRestored"))}</strong>
         </aside>
     `;
